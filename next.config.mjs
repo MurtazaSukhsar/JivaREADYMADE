@@ -6,7 +6,7 @@ const csp = [
   // scripts; Razorpay's own checkout.js is explicitly allow-listed.
   `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' https://picsum.photos https://drive.google.com https://lh3.googleusercontent.com data:",
+  "img-src 'self' https://picsum.photos https://drive.google.com https://lh3.googleusercontent.com https://res.cloudinary.com data:",
   "font-src 'self' data:",
   "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com",
   "frame-src https://api.razorpay.com https://checkout.razorpay.com",
@@ -30,6 +30,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
       },
       // Add your real image host here (Cloudinary, Supabase storage, etc.)
       // if you move off Google Drive links later — see the README note on
