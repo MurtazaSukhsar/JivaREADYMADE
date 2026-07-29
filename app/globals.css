@@ -14,12 +14,12 @@
 }
 
 ::selection {
-  background: #d97b5d;
-  color: #181b21;
+  background: #D91A3C;
+  color: #120005;
 }
 
 :focus-visible {
-  outline: 2px solid #d97b5d;
+  outline: 2px solid #D91A3C;
   outline-offset: 3px;
 }
 
@@ -29,12 +29,11 @@ html {
 }
 
 body {
-  background-color: #1e222a;
-  /* barely-there warmth so large dark areas don't read as flat black */
+  background-color: #1A0008;
   background-image: radial-gradient(
     120% 80% at 50% 0%,
-    rgba(217, 123, 93, 0.07) 0%,
-    rgba(30, 34, 42, 0) 60%
+    rgba(217, 26, 60, 0.1) 0%,
+    rgba(26, 0, 8, 0) 60%
   );
   background-attachment: fixed;
 }
@@ -54,19 +53,19 @@ body {
 
 /* Scrollbar tuned to the dark surface */
 * {
-  scrollbar-color: #3a414d #1e222a;
+  scrollbar-color: #5C1020 #1A0008;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-track {
-  background: #1e222a;
+  background: #1A0008;
 }
 *::-webkit-scrollbar-thumb {
-  background: #3a414d;
+  background: #5C1020;
   border-radius: 999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #4a5260;
+  background: #7a1828;
 }

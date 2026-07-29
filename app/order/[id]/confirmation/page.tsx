@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getOrderById } from "@/lib/orders";
 import { formatPrice } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
+import { getT } from "@/lib/i18n-server";
+import type { TranslationKey } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -10,43 +12,45 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
   const order = await getOrderById(params.id);
   if (!order) notFound();
 
+  const t = getT();
+  // "created" / "paid" / "failed" are sheet values, so they get looked up
+  // rather than shown raw to a customer.
+  const statusLabel = t(`status.${order.status}` as TranslationKey);
+
   return (
     <section className="mx-auto max-w-lg px-5 py-24 sm:px-8">
       {order.status === "paid" ? (
         <>
           <p className="inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-ember">
             <span className="h-1.5 w-1.5 rounded-full bg-ember" />
-            Payment confirmed
+            {t("confirm.paid")}
           </p>
-          <h1 className="mt-4 font-display text-3xl text-cream">Thank you</h1>
+          <h1 className="mt-4 font-display text-3xl text-cream">{t("confirm.thankYou")}</h1>
           <p className="mt-2 font-body text-sm text-ash">
-            Order <span className="font-mono text-cream">{order.id.slice(0, 8)}</span> is
-            confirmed.
+            {t("confirm.orderConfirmed", { id: order.id.slice(0, 8) })}
           </p>
         </>
       ) : order.status === "cod_pending" ? (
         <>
           <p className="inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-ember">
             <span className="h-1.5 w-1.5 rounded-full bg-ember" />
-            Cash on Delivery
+            {t("checkout.cod")}
           </p>
-          <h1 className="mt-4 font-display text-3xl text-cream">Order Confirmed</h1>
+          <h1 className="mt-4 font-display text-3xl text-cream">{t("confirm.codTitle")}</h1>
           <p className="mt-2 font-body text-sm text-ash">
-            Order <span className="font-mono text-cream">{order.id.slice(0, 8)}</span> is
-            confirmed. Please pay with cash when your package arrives.
+            {t("confirm.codBody", { id: order.id.slice(0, 8) })}
           </p>
         </>
       ) : (
         <>
           <p className="inline-flex items-center gap-2 rounded-full border border-line bg-slate px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-ash">
             <span className="h-1.5 w-1.5 rounded-full bg-ash" />
-            Order {order.status}
+            {t("confirm.orderStatus", { status: statusLabel })}
           </p>
-          <h1 className="mt-4 font-display text-3xl text-cream">Still waiting on payment</h1>
-          <p className="mt-2 font-body text-sm text-ash">
-            This order hasn&apos;t been confirmed as paid yet. If you completed a payment
-            and see this, it will update automatically within a minute.
-          </p>
+          <h1 className="mt-4 font-display text-3xl text-cream">
+            {t("confirm.waitingTitle")}
+          </h1>
+          <p className="mt-2 font-body text-sm text-ash">{t("confirm.waitingBody")}</p>
         </>
       )}
 
@@ -56,7 +60,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             <div>
               <p className="font-body text-sm text-cream">{item.name}</p>
               <p className="font-mono text-xs text-ash/70">
-                Qty {item.quantity} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
+                {t("common.qty", { n: item.quantity })} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
               </p>
             </div>
             <p className="font-mono text-sm text-cream">
@@ -69,7 +73,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
       {order.customer?.name && (
         <div className="mt-6 rounded-sm border border-line/50 bg-slate/40 px-4 py-3">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
-            Delivering to
+            {t("confirm.deliveringTo")}
           </p>
           <p className="mt-1.5 font-body text-sm text-cream">{order.customer.name}</p>
           <p className="font-body text-sm text-ash">{order.customer.address}</p>
@@ -77,14 +81,14 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             {[order.customer.city, order.customer.pincode].filter(Boolean).join(" — ")}
           </p>
           <p className="mt-2 font-mono text-xs text-ash/70">
-            We&apos;ll message {order.customer.phone} on WhatsApp when it ships.
+            {t("confirm.whatsappNote", { phone: order.customer.phone })}
           </p>
         </div>
       )}
 
       <div className="mt-4 flex items-center justify-between">
         <p className="font-mono text-sm uppercase tracking-widest2 text-ash">
-          {order.status === "cod_pending" ? "Total to pay" : "Total paid"}
+          {order.status === "cod_pending" ? t("confirm.totalToPay") : t("confirm.totalPaid")}
         </p>
         <p className="font-display text-2xl text-cream">
           {formatPrice(order.amount, siteConfig.currency)}
@@ -95,7 +99,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
         href="/shop"
         className="mt-8 block rounded-sm border border-line px-6 py-3 text-center font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:border-ember hover:text-ember"
       >
-        Continue shopping
+        {t("confirm.continue")}
       </Link>
     </section>
   );

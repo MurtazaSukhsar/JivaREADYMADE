@@ -1,3 +1,5 @@
+import type { Language } from "./i18n";
+
 export type Product = {
   id: string;
   slug: string;
@@ -9,6 +11,8 @@ export type Product = {
   description: string;
   images: string[];
   createdAt: string;
+  hidden?: boolean;     // true = not shown on storefront
+  rowNumber?: number;   // Google Sheets row index (for edit/delete)
 };
 
 export type NewProductInput = {
@@ -39,6 +43,9 @@ export type Customer = {
   address: string;
   city: string;
   pincode: string;
+  // Which language they picked in the popup. Stored so the "your order has
+  // shipped" WhatsApp message goes out in the language they actually read.
+  language: Language;
 };
 
 export type Order = {

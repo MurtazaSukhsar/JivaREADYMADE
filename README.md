@@ -29,8 +29,8 @@ npm run dev
 exactly `Products` and `Orders`. Give each a header row:
 
 - `Products` row 1: `Name | Price | Sizes | Colors | Description | Image URLs`
-- `Orders` row 1, 17 columns A–Q:
-  `Order ID | Date | Status | Customer Name | Phone | Email | Address | City | Pincode | Items | Amount | Currency | Razorpay Order ID | Payment ID | Shipped | Shipped At | Items JSON`
+- `Orders` row 1, 18 columns A–R:
+  `Order ID | Date | Status | Customer Name | Phone | Email | Address | City | Pincode | Items | Amount | Currency | Razorpay Order ID | Payment ID | Shipped | Shipped At | Items JSON | Language`
 
 The app writes and updates the `Orders` tab itself — you never have to fill
 it in. `Items` (column J) is the readable summary for whoever packs the
@@ -202,6 +202,8 @@ app/
   api/checkout/verify/           → signature-verified payment confirmation
   api/webhooks/razorpay/         → webhook, source of truth for payment status
 lib/
+  i18n.ts                        → en/hi/gu dictionary + t() helper
+  i18n-server.ts                 → reads the lang cookie in server components
   products.ts                    → reads/writes the Products sheet
   orders.ts                      → reads/writes the Orders sheet
   whatsapp.ts                    → pre-typed shipping message + wa.me link
@@ -212,6 +214,9 @@ lib/
   rate-limit.ts, origin-check.ts → basic abuse protection
   config.ts                      → brand name, tagline, currency
 components/OrderCard.tsx         → one admin order: ship toggle + WhatsApp
+components/LanguageSelectorModal → first-visit language popup
+components/LanguageSwitcher.tsx  → header language dropdown
+contexts/LanguageContext.tsx     → current language + t() for client components
 contexts/CartContext.tsx         → client-side cart (localStorage)
 data/orders.json                 → unused, kept for backwards compatibility
 products-seed.tsv                → paste into the Products sheet to start
@@ -235,11 +240,53 @@ from whichever WhatsApp account is signed in on that device.
 `shippedMessage()` in `lib/whatsapp.ts`. To tweak it for one order only,
 hit **Edit message** on that order's card before sending.
 
+**Language.** The message goes out in whichever language the customer
+picked from the popup — that's what column R records. The wording for all
+three lives in `TEMPLATES` in `lib/whatsapp.ts`. Product names, sizes and
+colours are never translated: they're what's printed on the label.
+
 **Phone numbers.** wa.me needs a full international number. If a customer
 types a plain 10-digit local number, the app prepends
 `siteConfig.defaultCountryCode` from `lib/config.ts` — currently `91`
 (India). Change it if you ship somewhere else: `971` UAE, `44` UK, `1`
 US/Canada.
+
+## Languages (English / हिन्दी / ગુજરાતી)
+
+A first-time visitor gets the language popup
+(`components/LanguageSelectorModal.tsx`). Their choice is written to a
+`lang` cookie, so **server-rendered pages come back already translated** —
+no flash of English, no hydration mismatch. There's also a switcher in the
+header for changing it later.
+
+**What translates:** everything the site itself says — nav, buttons, form
+labels and placeholders, validation errors, empty states, the confirmation
+page, and the WhatsApp shipping message.
+
+**What never translates:** anything out of the Google Sheet. Product names,
+descriptions, sizes and colours always show exactly as you typed them, in
+every language. Prices and the currency code are untouched too.
+
+**The admin panel stays English** by design, so its field labels keep
+matching the English column headers in your sheet.
+
+### Editing or adding wording
+
+All three languages live in one file, `lib/i18n.ts`:
+
+```ts
+const en = { "cart.checkout": "Checkout", ... };
+const hi: Dictionary = { "cart.checkout": "चेकआउट", ... };
+const gu: Dictionary = { "cart.checkout": "ચેકઆઉટ", ... };
+```
+
+Add the key to `en` first — `hi` and `gu` are typed as `Record<key, string>`,
+so TypeScript refuses to build until both have it. A half-translated deploy
+isn't possible.
+
+To add a fourth language: extend the `Language` union and `LANGUAGES` array
+at the top of `lib/i18n.ts`, add its dictionary, and it appears in both the
+popup and the header switcher automatically.
 
 ## Rebranding
 

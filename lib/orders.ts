@@ -1,6 +1,7 @@
 import "server-only";
 import crypto from "crypto";
 import { Customer, Order, OrderItem } from "./types";
+import { isLanguage } from "./i18n";
 import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 
 // Orders live in the same Google Sheet as the products, on a tab named
@@ -18,6 +19,7 @@ import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 //   G  Address           O  Shipped
 //   H  City              P  Shipped At
 //                        Q  Items JSON
+//                        R  Language
 //
 // Column J is a human-readable summary for whoever is packing the parcel;
 // column Q is the same items as JSON so the app can rebuild them losslessly.
@@ -30,9 +32,9 @@ import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 // server-side by Sheets and don't race.
 
 const SHEET_TAB = "Orders";
-const RANGE_READ = `${SHEET_TAB}!A2:Q`;
-const RANGE_APPEND = `${SHEET_TAB}!A:Q`;
-const COLUMN_COUNT = 17; // A..Q
+const RANGE_READ = `${SHEET_TAB}!A2:R`;
+const RANGE_APPEND = `${SHEET_TAB}!A:R`;
+const COLUMN_COUNT = 18; // A..R
 
 function getSheetId(): string {
   const id = process.env.GOOGLE_SHEET_ID;
@@ -68,6 +70,7 @@ function toRow(order: Order): (string | number)[] {
     order.shipped ? "yes" : "no",
     order.shippedAt ?? "",
     JSON.stringify(order.items),
+    order.customer.language,
   ];
 }
 
@@ -97,6 +100,7 @@ function parseRow(row: string[], rowNumber: number): Order | null {
     statusRaw === "paid" || statusRaw === "failed" || statusRaw === "cod_pending" ? statusRaw : "created";
 
   const shippedRaw = cell(row, 14).toLowerCase();
+  const languageRaw = cell(row, 17).toLowerCase();
 
   return {
     id,
@@ -110,6 +114,8 @@ function parseRow(row: string[], rowNumber: number): Order | null {
       address: cell(row, 6),
       city: cell(row, 7),
       pincode: cell(row, 8),
+      // Orders placed before the Language column existed have a blank cell.
+      language: isLanguage(languageRaw) ? languageRaw : "en",
     },
     items,
     amount: Number(row[10]) || 0,
@@ -138,7 +144,7 @@ async function writeRow(order: Order): Promise<void> {
   }
   await updateSheetRow(
     getSheetId(),
-    `${SHEET_TAB}!A${order.rowNumber}:Q${order.rowNumber}`,
+    `${SHEET_TAB}!A${order.rowNumber}:R${order.rowNumber}`,
     toRow(order)
   );
 }

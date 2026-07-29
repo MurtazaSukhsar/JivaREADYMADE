@@ -3,24 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { formatPrice } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal } = useCart();
+  const { t } = useLanguage();
 
   if (items.length === 0) {
     return (
       <section className="mx-auto max-w-2xl px-5 py-24 text-center sm:px-8">
-        <h1 className="font-display text-3xl text-cream">Your bag is empty</h1>
-        <p className="mt-3 font-body text-sm text-ash">
-          Nothing here yet — go find something worth carrying around.
-        </p>
+        <h1 className="font-display text-3xl text-cream">{t("cart.emptyTitle")}</h1>
+        <p className="mt-3 font-body text-sm text-ash">{t("cart.emptyBody")}</p>
         <Link
           href="/shop"
           className="mt-6 inline-block rounded-sm border border-line px-6 py-3 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:border-ember hover:text-ember"
         >
-          Browse the catalog
+          {t("cart.browse")}
         </Link>
       </section>
     );
@@ -28,7 +28,7 @@ export default function CartPage() {
 
   return (
     <section className="mx-auto max-w-3xl px-5 py-14 sm:px-8">
-      <h1 className="font-display text-3xl text-cream">Your Bag</h1>
+      <h1 className="font-display text-3xl text-cream">{t("cart.title")}</h1>
 
       <div className="mt-8 divide-y divide-line/50 rounded-sm border border-line/50 bg-slate/40 px-4">
         {items.map((item) => (
@@ -61,7 +61,7 @@ export default function CartPage() {
                     type="button"
                     onClick={() => updateQuantity(item.slug, item.size, item.color, item.quantity - 1)}
                     className="px-3 py-1 font-mono text-sm text-ash transition-colors hover:bg-line/40 hover:text-cream"
-                    aria-label="Decrease quantity"
+                    aria-label={t("cart.decrease")}
                   >
                     −
                   </button>
@@ -72,7 +72,7 @@ export default function CartPage() {
                     type="button"
                     onClick={() => updateQuantity(item.slug, item.size, item.color, item.quantity + 1)}
                     className="px-3 py-1 font-mono text-sm text-ash transition-colors hover:bg-line/40 hover:text-cream"
-                    aria-label="Increase quantity"
+                    aria-label={t("cart.increase")}
                   >
                     +
                   </button>
@@ -83,7 +83,7 @@ export default function CartPage() {
                   onClick={() => removeItem(item.slug, item.size, item.color)}
                   className="font-mono text-[11px] uppercase tracking-widest2 text-ash/60 transition-colors hover:text-ember"
                 >
-                  Remove
+                  {t("cart.remove")}
                 </button>
               </div>
             </div>
@@ -93,21 +93,19 @@ export default function CartPage() {
 
       <div className="mt-8 flex items-center justify-between">
         <p className="font-mono text-sm uppercase tracking-widest2 text-ash">
-          Estimated subtotal
+          {t("cart.subtotal")}
         </p>
         <p className="font-display text-2xl text-cream">
           {formatPrice(subtotal, siteConfig.currency)}
         </p>
       </div>
-      <p className="mt-1 font-body text-xs text-ash/60">
-        Final total is confirmed at checkout from current catalog prices.
-      </p>
+      <p className="mt-1 font-body text-xs text-ash/60">{t("cart.subtotalNote")}</p>
 
       <Link
         href="/checkout"
         className="mt-6 block rounded-sm bg-ember py-3.5 text-center font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
       >
-        Checkout
+        {t("cart.checkout")}
       </Link>
     </section>
   );

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductGallery({
   images,
@@ -11,6 +12,7 @@ export default function ProductGallery({
   alt: string;
 }) {
   const [active, setActive] = useState(0);
+  const { t } = useLanguage();
   const gallery = images.length > 0 ? images : ["https://picsum.photos/seed/placeholder/900/1125"];
 
   return (
@@ -33,7 +35,7 @@ export default function ProductGallery({
               key={src + i}
               type="button"
               onClick={() => setActive(i)}
-              aria-label={`Show image ${i + 1}`}
+              aria-label={t("product.showImage", { n: i + 1 })}
               className={`relative aspect-[4/5] overflow-hidden rounded-sm bg-slate transition-all duration-300 ${
                 i === active
                   ? "opacity-100 ring-1 ring-ember"

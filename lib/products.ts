@@ -1,6 +1,6 @@
 import "server-only";
 import { Product, NewProductInput } from "./types";
-import { readSheetRows, appendSheetRow } from "./google-sheets";
+import { readSheetRows, appendSheetRow, updateSheetRow } from "./google-sheets";
 
 // Products now live in a Google Sheet instead of a local file, so whoever
 // runs the shop can add or edit products directly in the spreadsheet — the
@@ -16,7 +16,7 @@ import { readSheetRows, appendSheetRow } from "./google-sheets";
 // no timestamp bookkeeping required — whether the row came from the admin
 // form or was typed straight into the sheet.
 
-const SHEET_RANGE_READ = "Products!A2:F";
+const SHEET_RANGE_READ = "Products!A2:G";
 const SHEET_RANGE_APPEND = "Products!A:F";
 const CACHE_TTL_MS = 60_000;
 
@@ -45,6 +45,8 @@ function parseRow(row: string[], rowNumber: number): Product | null {
   const price = Number(row[1]);
   if (!name || !Number.isFinite(price) || price <= 0) return null;
 
+  const hidden = String(row[6] ?? "").trim().toUpperCase() === "HIDDEN";
+
   const sizes = String(row[2] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const colors = String(row[3] ?? "").split(",").map((c) => c.trim()).filter(Boolean);
   const description = String(row[4] ?? "").trim();
@@ -61,6 +63,8 @@ function parseRow(row: string[], rowNumber: number): Product | null {
     sizes,
     colors,
     description,
+    hidden,
+    rowNumber,
     // Applied at read time (not just on admin-form submit) so a row typed
     // directly into the sheet with no image column also gets a placeholder.
     images: images.length > 0 ? images : [placeholderImage(baseSlug)],
@@ -92,7 +96,7 @@ async function fetchAllFromSheet(): Promise<Product[]> {
     products.push({ ...product, slug });
   });
 
-  return products.reverse(); // bottom row (newest) first
+  return products.reverse().filter((p) => !p.hidden); // bottom row (newest) first, hide flagged rows
 }
 
 export async function getAllProducts(): Promise<Product[]> {
@@ -117,6 +121,18 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return products.find((p) => p.slug === slug) ?? null;
 }
 
+/** Returns the product including hidden ones — used by admin panel. */
+export async function getAllProductsAdmin(): Promise<Product[]> {
+  const rows = await readSheetRows(getSheetId(), SHEET_RANGE_READ);
+  const products: Product[] = [];
+  rows.forEach((row, i) => {
+    const rowNumber = i + 2;
+    const product = parseRow(row, rowNumber);
+    if (product) products.push(product);
+  });
+  return products.reverse();
+}
+
 export async function addProduct(input: NewProductInput): Promise<Product> {
   await appendSheetRow(getSheetId(), SHEET_RANGE_APPEND, [
     input.name,
@@ -127,7 +143,7 @@ export async function addProduct(input: NewProductInput): Promise<Product> {
     input.images.join(", "),
   ]);
 
-  cache = null; // this path stays instant even though direct sheet edits take up to a minute
+  cache = null;
 
   const products = await getAllProducts();
   const created = products.find((p) => p.name === input.name);
@@ -135,4 +151,35 @@ export async function addProduct(input: NewProductInput): Promise<Product> {
     throw new Error("Saved to the sheet, but couldn't read it back — check the sheet manually.");
   }
   return created;
+}
+
+/** Update a product row in the sheet by its rowNumber. */
+export async function updateProduct(
+  rowNumber: number,
+  input: NewProductInput
+): Promise<void> {
+  const range = `Products!A${rowNumber}:F${rowNumber}`;
+  await updateSheetRow(getSheetId(), range, [
+    input.name,
+    input.price,
+    input.sizes.join(", "),
+    input.colors.join(", "),
+    input.description,
+    input.images.join(", "),
+  ], "USER_ENTERED");
+  cache = null;
+}
+
+/** Toggle hidden flag in column G. When HIDDEN the storefront filters it out. */
+export async function setProductHidden(rowNumber: number, hidden: boolean): Promise<void> {
+  const range = `Products!G${rowNumber}`;
+  await updateSheetRow(getSheetId(), range, [hidden ? "HIDDEN" : ""], "RAW");
+  cache = null;
+}
+
+/** Clear the product row so it disappears from the sheet (permanent delete). */
+export async function deleteProduct(rowNumber: number): Promise<void> {
+  const range = `Products!A${rowNumber}:G${rowNumber}`;
+  await updateSheetRow(getSheetId(), range, ["", "", "", "", "", "", ""], "RAW");
+  cache = null;
 }

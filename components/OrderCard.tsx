@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Order } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { shippedMessage, whatsAppLink } from "@/lib/whatsapp";
+import { LANGUAGES } from "@/lib/i18n";
 
 function formatDate(iso: string): string {
   if (!iso) return "—";
@@ -79,6 +80,10 @@ export default function OrderCard({ order }: { order: Order }) {
             }`}
           >
             {shipped ? "Shipped" : "Not shipped"}
+          </span>
+          {/* which language the WhatsApp message below will be written in */}
+          <span className="rounded-full border border-line bg-slate px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest2 text-ash">
+            {LANGUAGES.find((l) => l.code === order.customer.language)?.short ?? "EN"}
           </span>
         </div>
       </div>

@@ -5,6 +5,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { siteConfig } from "@/lib/config";
 import { CartProvider } from "@/contexts/CartContext";
+import { getLanguage } from "@/lib/i18n-server";
+import { LANGUAGE_COOKIE, isLanguage } from "@/lib/i18n";
+import { cookies } from "next/headers";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import LanguageSelectorModal from "@/components/LanguageSelectorModal";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -31,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#1E222A",
+  themeColor: "#1A0008",
 };
 
 export default function RootLayout({
@@ -39,16 +44,25 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Null when this visitor has never picked a language — that's what makes
+  // the popup appear. Reading it here (not in the browser) means the first
+  // HTML sent is already in the right language.
+  const cookieValue = cookies().get(LANGUAGE_COOKIE)?.value;
+  const chosen = isLanguage(cookieValue) ? cookieValue : null;
+
   return (
-    <html lang="en" className="dark">
+    <html lang={getLanguage()} className="dark">
       <body
         className={`${fraunces.variable} ${manrope.variable} ${spaceMono.variable} min-h-screen bg-night font-body text-cream antialiased`}
       >
-        <CartProvider>
-          <Header />
-          <main>{children}</main>
-          <Footer />
-        </CartProvider>
+        <LanguageProvider initial={chosen}>
+          <LanguageSelectorModal />
+          <CartProvider>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </CartProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

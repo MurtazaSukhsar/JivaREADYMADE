@@ -6,6 +6,8 @@ import Script from "next/script";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { plural, type TranslationKey } from "@/lib/i18n";
 
 declare global {
   interface Window {
@@ -37,28 +39,26 @@ const EMPTY_CUSTOMER: Customer = {
 // Mirrors lib/validation.ts so the customer sees the problem before a
 // round-trip. The server still re-validates — this is convenience, not
 // security.
-function validate(c: Customer): Partial<Record<keyof Customer, string>> {
-  const errors: Partial<Record<keyof Customer, string>> = {};
-  if (c.name.trim().length < 2) errors.name = "Enter your full name";
-  if (!/^\+?[0-9\s-]{6,20}$/.test(c.phone.trim()))
-    errors.phone = "Enter a valid phone number";
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email.trim()))
-    errors.email = "Enter a valid email";
-  if (c.address.trim().length < 5) errors.address = "Enter your full address";
-  if (c.city.trim().length < 2) errors.city = "Enter your city";
-  if (!/^[A-Za-z0-9\s-]{4,12}$/.test(c.pincode.trim()))
-    errors.pincode = "Enter a valid pincode";
+function validate(c: Customer): Partial<Record<keyof Customer, TranslationKey>> {
+  const errors: Partial<Record<keyof Customer, TranslationKey>> = {};
+  if (c.name.trim().length < 2) errors.name = "err.name";
+  if (!/^\+?[0-9\s-]{6,20}$/.test(c.phone.trim())) errors.phone = "err.phone";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email.trim())) errors.email = "err.email";
+  if (c.address.trim().length < 5) errors.address = "err.address";
+  if (c.city.trim().length < 2) errors.city = "err.city";
+  if (!/^[A-Za-z0-9\s-]{4,12}$/.test(c.pincode.trim())) errors.pincode = "err.pincode";
   return errors;
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clear } = useCart();
+  const { t, language } = useLanguage();
   const [scriptReady, setScriptReady] = useState(false);
   const [status, setStatus] = useState<"idle" | "creating" | "paying" | "verifying" | "creating_cod">("idle");
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, TranslationKey>>>({});
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setCustomer((c) => ({ ...c, [key]: e.target.value }));
@@ -71,7 +71,7 @@ export default function CheckoutPage() {
     const errors = validate(customer);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setError("Check the highlighted fields before paying.");
+      setError(t("err.checkFields"));
       return;
     }
 
@@ -95,19 +95,20 @@ export default function CheckoutPage() {
             address: customer.address.trim(),
             city: customer.city.trim(),
             pincode: customer.pincode.trim(),
+            language,
           },
         }),
       });
       const created = await createRes.json();
 
       if (!createRes.ok) {
-        setError(created.error ?? "Could not start checkout.");
+        setError(created.error ?? t("err.couldNotStart"));
         setStatus("idle");
         return;
       }
 
       if (!scriptReady || !window.Razorpay) {
-        setError("Payment script hasn't loaded yet — try again in a moment.");
+        setError(t("err.scriptNotReady"));
         setStatus("idle");
         return;
       }
@@ -120,7 +121,7 @@ export default function CheckoutPage() {
         currency: created.currency,
         order_id: created.razorpayOrderId,
         name: siteConfig.name,
-        description: `Order · ${items.length} item${items.length === 1 ? "" : "s"}`,
+        description: plural(t, "checkout.orderDescription", items.length),
         prefill: created.prefill,
         theme: { color: "#D97B5D", backdrop_color: "#181B21" },
         modal: {
@@ -146,7 +147,7 @@ export default function CheckoutPage() {
             const verified = await verifyRes.json();
 
             if (!verifyRes.ok) {
-              setError(verified.error ?? "Payment could not be verified.");
+              setError(verified.error ?? t("err.notVerified"));
               setStatus("idle");
               return;
             }
@@ -154,20 +155,20 @@ export default function CheckoutPage() {
             clear();
             router.push(`/order/${verified.orderId}/confirmation`);
           } catch {
-            setError("Payment went through, but we couldn't confirm it. Contact support with your payment ID.");
+            setError(t("err.unconfirmed"));
             setStatus("idle");
           }
         },
       });
 
       rzp.on("payment.failed", () => {
-        setError("Payment failed or was cancelled. No charge was made.");
+        setError(t("err.paymentFailed"));
         setStatus("idle");
       });
 
       rzp.open();
     } catch {
-      setError("Could not reach the server. Try again.");
+      setError(t("err.server"));
       setStatus("idle");
     }
   };
@@ -177,7 +178,7 @@ export default function CheckoutPage() {
     const errors = validate(customer);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setError("Check the highlighted fields before ordering.");
+      setError(t("err.checkFieldsOrder"));
       return;
     }
 
@@ -200,13 +201,14 @@ export default function CheckoutPage() {
             address: customer.address.trim(),
             city: customer.city.trim(),
             pincode: customer.pincode.trim(),
+            language,
           },
         }),
       });
       const created = await createRes.json();
 
       if (!createRes.ok) {
-        setError(created.error ?? "Could not start checkout.");
+        setError(created.error ?? t("err.couldNotStart"));
         setStatus("idle");
         return;
       }
@@ -214,7 +216,7 @@ export default function CheckoutPage() {
       clear();
       router.push(`/order/${created.localOrderId}/confirmation`);
     } catch {
-      setError("Could not reach the server. Try again.");
+      setError(t("err.server"));
       setStatus("idle");
     }
   };
@@ -222,10 +224,8 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <section className="mx-auto max-w-lg px-5 py-24 text-center sm:px-8">
-        <h1 className="font-display text-3xl text-cream">Your bag is empty</h1>
-        <p className="mt-3 font-body text-sm text-ash">
-          Add something to your bag before checking out.
-        </p>
+        <h1 className="font-display text-3xl text-cream">{t("cart.emptyTitle")}</h1>
+        <p className="mt-3 font-body text-sm text-ash">{t("checkout.emptyBody")}</p>
       </section>
     );
   }
@@ -238,21 +238,18 @@ export default function CheckoutPage() {
         onLoad={() => setScriptReady(true)}
       />
 
-      <h1 className="font-display text-3xl text-cream">Checkout</h1>
+      <h1 className="font-display text-3xl text-cream">{t("checkout.title")}</h1>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         {/* --- delivery details --- */}
         <div className="rounded-sm border border-line/60 bg-slate/40 p-6 sm:p-7">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ember">
-            Delivery details
+            {t("checkout.deliveryDetails")}
           </p>
-          <p className="mt-2 font-body text-xs text-ash/70">
-            We use your phone number to send a WhatsApp update when the parcel
-            ships.
-          </p>
+          <p className="mt-2 font-body text-xs text-ash/70">{t("checkout.whatsappNote")}</p>
 
           <div className="mt-6 space-y-5">
-            <Field label="Full name" error={fieldErrors.name}>
+            <Field label={t("checkout.name")} error={fieldErrors.name && t(fieldErrors.name)}>
               <input
                 value={customer.name}
                 onChange={set("name")}
@@ -263,7 +260,7 @@ export default function CheckoutPage() {
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="WhatsApp number" error={fieldErrors.phone}>
+              <Field label={t("checkout.phone")} error={fieldErrors.phone && t(fieldErrors.phone)}>
                 <input
                   value={customer.phone}
                   onChange={set("phone")}
@@ -274,7 +271,7 @@ export default function CheckoutPage() {
                 />
               </Field>
 
-              <Field label="Email" error={fieldErrors.email}>
+              <Field label={t("checkout.email")} error={fieldErrors.email && t(fieldErrors.email)}>
                 <input
                   value={customer.email}
                   onChange={set("email")}
@@ -286,19 +283,19 @@ export default function CheckoutPage() {
               </Field>
             </div>
 
-            <Field label="Address" error={fieldErrors.address}>
+            <Field label={t("checkout.address")} error={fieldErrors.address && t(fieldErrors.address)}>
               <textarea
                 value={customer.address}
                 onChange={set("address")}
                 rows={3}
-                placeholder="Flat / house no., building, street, area"
+                placeholder={t("checkout.addressPlaceholder")}
                 autoComplete="street-address"
                 className="input resize-none"
               />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="City" error={fieldErrors.city}>
+              <Field label={t("checkout.city")} error={fieldErrors.city && t(fieldErrors.city)}>
                 <input
                   value={customer.city}
                   onChange={set("city")}
@@ -308,7 +305,7 @@ export default function CheckoutPage() {
                 />
               </Field>
 
-              <Field label="Pincode" error={fieldErrors.pincode}>
+              <Field label={t("checkout.pincode")} error={fieldErrors.pincode && t(fieldErrors.pincode)}>
                 <input
                   value={customer.pincode}
                   onChange={set("pincode")}
@@ -325,7 +322,7 @@ export default function CheckoutPage() {
         {/* --- summary + pay --- */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
-            Order summary
+            {t("checkout.orderSummary")}
           </p>
 
           <div className="mt-3 divide-y divide-line/50 rounded-sm border border-line/50 bg-slate/40 px-4">
@@ -334,7 +331,7 @@ export default function CheckoutPage() {
                 <div>
                   <p className="font-body text-sm text-cream">{item.name}</p>
                   <p className="font-mono text-xs text-ash/70">
-                    Qty {item.quantity} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
+                    {t("common.qty", { n: item.quantity })} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
                   </p>
                 </div>
                 <p className="font-mono text-sm text-cream">
@@ -345,13 +342,10 @@ export default function CheckoutPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <p className="font-mono text-sm uppercase tracking-widest2 text-ash">Total</p>
+            <p className="font-mono text-sm uppercase tracking-widest2 text-ash">{t("common.total")}</p>
             <p className="font-display text-2xl text-cream">{formatPrice(subtotal, siteConfig.currency)}</p>
           </div>
-          <p className="mt-1 font-body text-xs text-ash/60">
-            This total is an estimate — Razorpay charges the amount our server confirms
-            against the current catalog, not this number.
-          </p>
+          <p className="mt-1 font-body text-xs text-ash/60">{t("checkout.estimateNote")}</p>
 
           <div className="mt-6 space-y-3">
             <button
@@ -360,10 +354,10 @@ export default function CheckoutPage() {
               disabled={status !== "idle"}
               className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
             >
-              {status === "idle" && "Pay with Razorpay"}
-              {status === "creating" && "Preparing order…"}
-              {status === "paying" && "Waiting for payment…"}
-              {status === "verifying" && "Confirming payment…"}
+              {status === "idle" && t("checkout.pay")}
+              {status === "creating" && t("checkout.preparing")}
+              {status === "paying" && t("checkout.waiting")}
+              {status === "verifying" && t("checkout.confirming")}
             </button>
             <button
               type="button"
@@ -371,8 +365,8 @@ export default function CheckoutPage() {
               disabled={status !== "idle"}
               className="w-full rounded-sm border border-ember text-ember py-3.5 font-mono text-xs uppercase tracking-widest2 transition-all duration-200 hover:bg-ember/10 disabled:opacity-50"
             >
-              {status === "idle" && "Cash on Delivery"}
-              {status === "creating_cod" && "Placing order…"}
+              {status === "idle" && t("checkout.cod")}
+              {status === "creating_cod" && t("checkout.placingOrder")}
             </button>
           </div>
 

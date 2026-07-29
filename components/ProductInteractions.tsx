@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductInteractions({
   slug,
@@ -20,6 +21,7 @@ export default function ProductInteractions({
   colors: string[];
 }) {
   const { addItem } = useCart();
+  const { t } = useLanguage();
   const [size, setSize] = useState<string | undefined>(sizes[0]);
   const [color, setColor] = useState<string | undefined>(colors[0]);
   const [added, setAdded] = useState(false);
@@ -42,7 +44,7 @@ export default function ProductInteractions({
       {sizes.length > 0 && (
         <div className="mt-6">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
-            Size
+            {t("product.size")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {sizes.map((s) => (
@@ -62,7 +64,7 @@ export default function ProductInteractions({
       {colors.length > 0 && (
         <div className="mt-5">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
-            Color
+            {t("product.color")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {colors.map((c) => (
@@ -84,17 +86,18 @@ export default function ProductInteractions({
         onClick={handleAdd}
         className="mt-8 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
       >
-        {added ? "Added" : "Add to bag"}
+        {added ? t("product.added") : t("product.addToBag")}
       </button>
       {added && (
-        <p className="mt-2 font-body text-xs text-ash/80">
-          In your{" "}
-          <Link href="/cart" className="text-ember underline underline-offset-2">
-            bag
+        <div className="mt-2 font-body text-xs text-ash/80">
+          <p>{t("product.addedNote")}</p>
+          <Link
+            href="/cart"
+            className="mt-1 inline-block text-ember underline underline-offset-2"
+          >
+            {t("product.viewBag")}
           </Link>
-          . Price shown here is for reference — checkout always confirms the
-          current price from the catalog.
-        </p>
+        </div>
       )}
     </div>
   );

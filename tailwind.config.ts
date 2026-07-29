@@ -8,15 +8,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Soft dark palette — charcoal, never pure black.
-        night: "#1E222A",   // page background
-        carbon: "#181B21",  // deeper bands (footer, marquee, hero scrim)
-        slate: "#272C35",   // raised surfaces: cards, inputs, image wells
-        line: "#3A414D",    // borders / dividers
-        cream: "#ECE8E1",   // primary text
-        ash: "#9CA4B0",     // muted text
-        ember: "#D97B5D",   // primary accent (warm rust)
-        brass: "#C9A96A",   // secondary accent
+        // Jiva brand palette — dark maroon / crimson.
+        night: "#1A0008",   // page background (very dark maroon)
+        carbon: "#120005",  // deeper bands (footer, hero scrim)
+        slate: "#2A0010",   // raised surfaces: cards, inputs, image wells
+        line: "#5C1020",    // borders / dividers
+        cream: "#F5EDE8",   // primary text (warm white)
+        ash: "#C49090",     // muted text
+        ember: "#D91A3C",   // primary accent (crimson red)
+        brass: "#E8956B",   // secondary accent (warm orange)
       },
       fontFamily: {
         display: ["var(--font-fraunces)", "serif"],
@@ -28,7 +28,7 @@ const config: Config = {
       },
       boxShadow: {
         lift: "0 18px 40px -24px rgba(0, 0, 0, 0.75)",
-        glow: "0 0 0 1px rgba(217, 123, 93, 0.35), 0 12px 32px -18px rgba(217, 123, 93, 0.55)",
+        glow: "0 0 0 1px rgba(217, 26, 60, 0.4), 0 12px 32px -18px rgba(217, 26, 60, 0.6)",
       },
       keyframes: {
         marquee: {

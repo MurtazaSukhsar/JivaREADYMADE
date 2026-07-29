@@ -46,6 +46,9 @@ export const customerSchema = z.object({
     .min(4, "Enter a valid pincode")
     .max(12)
     .regex(/^[A-Za-z0-9\s-]+$/, "Pincode can only contain letters, digits and -"),
+  // Sent by the checkout form from the language popup. Defaults to English
+  // so an older cached page that doesn't send it still validates.
+  language: z.enum(["en", "hi", "gu"]).default("en"),
 });
 
 export const createOrderSchema = z.object({

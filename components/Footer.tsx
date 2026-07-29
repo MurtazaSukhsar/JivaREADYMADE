@@ -1,54 +1,28 @@
 import Link from "next/link";
 import { siteConfig } from "@/lib/config";
+import { getT } from "@/lib/i18n-server";
 
 export default function Footer() {
+  const t = getT();
+
   return (
     <footer className="border-t border-line/70 bg-carbon text-cream">
-      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
-        <div className="grid gap-10 sm:grid-cols-2">
-          <div>
-            <p className="font-display text-2xl">{siteConfig.name}</p>
-            <p className="mt-3 max-w-xs font-body text-sm text-ash">
-              {siteConfig.tagline}
-            </p>
-            <Link
-              href="/shop"
-              className="mt-4 inline-block font-mono text-[11px] uppercase tracking-widest2 text-ember transition-opacity hover:opacity-75"
-            >
-              Shop the collection →
-            </Link>
-          </div>
+      <div className="mx-auto max-w-2xl px-5 py-14 text-center sm:px-8 flex flex-col items-center">
+        <p className="font-display text-3xl">{siteConfig.name}</p>
+        <p className="mt-4 font-body text-base leading-relaxed text-ash max-w-md">
+          {t("footer.tagline")}
+        </p>
+        <Link
+          href="/shop"
+          className="mt-6 inline-block font-mono text-xs uppercase tracking-widest2 text-ember transition-opacity hover:opacity-75"
+        >
+          {t("footer.shopCollection")}
+        </Link>
 
-          <div>
-            <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
-              Stay in the loop
-            </p>
-            <form className="mt-4 flex border-b border-line pb-2 transition-colors focus-within:border-ember/70">
-              <input
-                type="email"
-                placeholder="Email address"
-                className="w-full bg-transparent font-body text-sm text-cream placeholder:text-ash/50 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-ember"
-              >
-                Join
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div className="mt-14 flex flex-col-reverse items-start justify-between gap-4 border-t border-line/60 pt-6 sm:flex-row sm:items-center">
-          <p className="font-mono text-[11px] text-ash/60">
-            © {new Date().getFullYear()} {siteConfig.name} — {siteConfig.season}
+        <div className="mt-12 w-full border-t border-line/60 pt-6">
+          <p className="font-mono text-xs text-ash/60">
+            © {new Date().getFullYear()} {siteConfig.name}
           </p>
-          <Link
-            href="/admin"
-            className="font-mono text-[11px] uppercase tracking-widest2 text-ash/60 transition-colors hover:text-cream"
-          >
-            Manage catalog
-          </Link>
         </div>
       </div>
     </footer>

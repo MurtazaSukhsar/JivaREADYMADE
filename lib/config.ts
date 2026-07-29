@@ -1,6 +1,9 @@
 // Change these to rebrand the whole site — nothing else needs editing.
 export const siteConfig = {
   name: "JIVAREADYYMADE",
+  // Used for the browser tab title and social previews. The tagline shown
+  // ON the page (hero + footer) is translated, so change it in lib/i18n.ts
+  // under "home.heroTitle" / "footer.tagline" as well.
   tagline: "Menswear built for how you actually move.",
   currency: "INR",
   season: "Summer '26",
