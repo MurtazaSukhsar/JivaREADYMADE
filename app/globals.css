@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background: #d97b5d;
+  color: #181b21;
+}
+
+:focus-visible {
+  outline: 2px solid #d97b5d;
+  outline-offset: 3px;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background-color: #1e222a;
+  /* barely-there warmth so large dark areas don't read as flat black */
+  background-image: radial-gradient(
+    120% 80% at 50% 0%,
+    rgba(217, 123, 93, 0.07) 0%,
+    rgba(30, 34, 42, 0) 60%
+  );
+  background-attachment: fixed;
+}
+
+.hairline {
+  border-color: rgba(236, 232, 225, 0.12);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+
+.input {
+  @apply w-full rounded-sm border border-line bg-slate px-3.5 py-2.5 font-body text-sm text-cream transition-colors placeholder:text-ash/50 focus:border-ember/70 focus:outline-none;
+}
+
+/* Scrollbar tuned to the dark surface */
+* {
+  scrollbar-color: #3a414d #1e222a;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: #1e222a;
+}
+*::-webkit-scrollbar-thumb {
+  background: #3a414d;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #4a5260;
+}
