@@ -1,3 +1,4 @@
 export function formatPrice(price: number, currency: string = "AED"): string {
-  return `${currency} ${price.toLocaleString("en-US")}`;
+  const displayCurrency = currency === "INR" ? "Rs" : currency;
+  return `${displayCurrency} ${price.toLocaleString("en-US")}`;
 }

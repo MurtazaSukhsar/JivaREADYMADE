@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductGallery({
@@ -15,17 +15,47 @@ export default function ProductGallery({
   const { t } = useLanguage();
   const gallery = images.length > 0 ? images : ["https://picsum.photos/seed/placeholder/900/1125"];
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const index = Math.round(target.scrollLeft / target.clientWidth);
+    if (index !== active && index >= 0 && index < gallery.length) {
+      setActive(index);
+    }
+  };
+
+  const scrollToImage = (index: number) => {
+    setActive(index);
+    if (scrollRef.current) {
+      const container = scrollRef.current;
+      container.scrollTo({
+        left: container.clientWidth * index,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
     <div>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-slate ring-1 ring-line/60 shadow-lift">
-        <Image
-          src={gallery[active]}
-          alt={alt}
-          fill
-          priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-cover"
-        />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none rounded-sm bg-slate ring-1 ring-line/60 shadow-lift"
+      >
+        {gallery.map((src, i) => (
+          <div key={src + i} className="w-full shrink-0 snap-center">
+            <Image
+              src={src}
+              alt={`${alt} - Image ${i + 1}`}
+              width={800}
+              height={1000}
+              priority={i === 0}
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="w-full h-auto"
+            />
+          </div>
+        ))}
       </div>
 
       {gallery.length > 1 && (
@@ -34,7 +64,7 @@ export default function ProductGallery({
             <button
               key={src + i}
               type="button"
-              onClick={() => setActive(i)}
+              onClick={() => scrollToImage(i)}
               aria-label={t("product.showImage", { n: i + 1 })}
               className={`relative aspect-[4/5] overflow-hidden rounded-sm bg-slate transition-all duration-300 ${
                 i === active

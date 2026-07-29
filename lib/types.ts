@@ -42,6 +42,7 @@ export type Customer = {
   email: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
   // Which language they picked in the popup. Stored so the "your order has
   // shipped" WhatsApp message goes out in the language they actually read.

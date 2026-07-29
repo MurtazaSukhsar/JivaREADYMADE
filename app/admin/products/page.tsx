@@ -35,6 +35,7 @@ export default function ManageProductsPage() {
   const [saving, setSaving] = useState<string | null>(null); // product id being saved
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -336,12 +337,60 @@ export default function ManageProductsPage() {
                       </label>
                       <label className="block sm:col-span-2">
                         <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
-                          Image URLs (comma separated)
+                          Images (Upload or URLs)
                         </span>
+                        <div className="mb-2 mt-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            disabled={isUploading}
+                            onChange={async (e) => {
+                              const files = e.target.files;
+                              if (!files || files.length === 0) return;
+
+                              setIsUploading(true);
+                              try {
+                                const urls: string[] = [];
+                                for (let i = 0; i < files.length; i++) {
+                                  const formData = new FormData();
+                                  formData.append("file", files[i]);
+                                  const res = await fetch("/api/upload", {
+                                    method: "POST",
+                                    body: formData,
+                                  });
+                                  if (res.ok) {
+                                    const data = await res.json();
+                                    urls.push(data.url);
+                                  } else {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data.error || "Some uploads failed");
+                                  }
+                                }
+
+                                setEditState((prev) => {
+                                  if (!prev) return prev;
+                                  const existing = prev.images ? prev.images.split(",").map(x => x.trim()).filter(Boolean) : [];
+                                  const all = [...existing, ...urls];
+                                  return { ...prev, images: all.join(", ") };
+                                });
+                                showToast("Upload complete ✓");
+                              } catch (error: any) {
+                                showToast(error.message || "Upload failed.", false);
+                              } finally {
+                                setIsUploading(false);
+                                e.target.value = '';
+                              }
+                            }}
+                            className="text-xs text-ash file:mr-4 file:rounded-sm file:border-0 file:bg-slate/50 file:px-4 file:py-2 file:font-mono file:text-[10px] file:uppercase file:tracking-widest2 file:text-cream hover:file:bg-slate/80 cursor-pointer disabled:opacity-50"
+                          />
+                          {isUploading && <span className="text-xs text-ember ml-2">Uploading...</span>}
+                        </div>
                         <input
                           className="input mt-1"
                           value={editState.images}
                           onChange={(e) => setEditState({ ...editState, images: e.target.value })}
+                          placeholder="https://... , /uploads/..."
                         />
                       </label>
                     </div>

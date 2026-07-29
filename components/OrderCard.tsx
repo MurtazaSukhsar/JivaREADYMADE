@@ -96,7 +96,7 @@ export default function OrderCard({ order }: { order: Order }) {
           <div className="mt-2 space-y-0.5 font-body text-sm text-cream">
             <p>{order.customer.address || "—"}</p>
             <p className="text-ash">
-              {[order.customer.city, order.customer.pincode].filter(Boolean).join(" — ") || "—"}
+              {[order.customer.city, order.customer.state, order.customer.pincode].filter(Boolean).join(" — ") || "—"}
             </p>
           </div>
           <div className="mt-3 space-y-0.5 font-mono text-xs text-ash">

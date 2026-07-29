@@ -38,9 +38,10 @@ export const customerSchema = z.object({
     .min(6, "Enter a valid phone number")
     .max(20)
     .regex(/^\+?[0-9\s-]+$/, "Phone can only contain digits, spaces, - and +"),
-  email: z.string().trim().email("Enter a valid email").max(200),
+  email: z.string().trim().max(200).optional().default(""),
   address: z.string().trim().min(5, "Enter your full address").max(400),
   city: z.string().trim().min(2, "Enter your city").max(80),
+  state: z.string().trim().min(2, "Enter your town, city, district, or state").max(120),
   pincode: z
     .string()
     .trim()

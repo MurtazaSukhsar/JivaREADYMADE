@@ -32,9 +32,9 @@ import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 // server-side by Sheets and don't race.
 
 const SHEET_TAB = "Orders";
-const RANGE_READ = `${SHEET_TAB}!A2:R`;
-const RANGE_APPEND = `${SHEET_TAB}!A:R`;
-const COLUMN_COUNT = 18; // A..R
+const RANGE_READ = `${SHEET_TAB}!A2:S`;
+const RANGE_APPEND = `${SHEET_TAB}!A:S`;
+const COLUMN_COUNT = 19; // A..S
 
 function getSheetId(): string {
   const id = process.env.GOOGLE_SHEET_ID;
@@ -71,6 +71,7 @@ function toRow(order: Order): (string | number)[] {
     order.shippedAt ?? "",
     JSON.stringify(order.items),
     order.customer.language,
+    order.customer.state,
   ];
 }
 
@@ -116,6 +117,7 @@ function parseRow(row: string[], rowNumber: number): Order | null {
       pincode: cell(row, 8),
       // Orders placed before the Language column existed have a blank cell.
       language: isLanguage(languageRaw) ? languageRaw : "en",
+      state: cell(row, 18),
     },
     items,
     amount: Number(row[10]) || 0,
@@ -144,7 +146,7 @@ async function writeRow(order: Order): Promise<void> {
   }
   await updateSheetRow(
     getSheetId(),
-    `${SHEET_TAB}!A${order.rowNumber}:R${order.rowNumber}`,
+    `${SHEET_TAB}!A${order.rowNumber}:S${order.rowNumber}`,
     toRow(order)
   );
 }

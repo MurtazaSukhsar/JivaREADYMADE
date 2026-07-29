@@ -140,33 +140,43 @@ export default function AdminPage() {
             <input
               type="file"
               accept="image/*"
+              multiple
               disabled={isUploading}
               onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
                 
                 setIsUploading(true);
                 try {
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  
-                  const res = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                  });
-                  
-                  const data = await res.json();
-                  if (res.ok) {
-                    setImages((prev) => prev ? `${prev}, ${data.url}` : data.url);
-                    setStatus({ state: "idle" });
-                  } else {
-                    setStatus({ state: "error", message: data.error || "Upload failed" });
+                  const urls: string[] = [];
+                  for (let i = 0; i < files.length; i++) {
+                    const formData = new FormData();
+                    formData.append("file", files[i]);
+                    
+                    const res = await fetch("/api/upload", {
+                      method: "POST",
+                      body: formData,
+                    });
+                    
+                    if (res.ok) {
+                      const data = await res.json();
+                      urls.push(data.url);
+                    } else {
+                      const data = await res.json().catch(() => ({}));
+                      throw new Error(data.error || "Some uploads failed");
+                    }
                   }
-                } catch (error) {
-                  setStatus({ state: "error", message: "Upload failed to connect to server" });
+                  
+                  setImages((prev) => {
+                    const existing = prev ? prev.split(",").map(x => x.trim()).filter(Boolean) : [];
+                    const all = [...existing, ...urls];
+                    return all.join(", ");
+                  });
+                  setStatus({ state: "idle" });
+                } catch (error: any) {
+                  setStatus({ state: "error", message: error.message || "Upload failed" });
                 } finally {
                   setIsUploading(false);
-                  // Reset input so the same file can be selected again if needed
                   e.target.value = '';
                 }
               }}

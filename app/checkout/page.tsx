@@ -24,6 +24,7 @@ type Customer = {
   email: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
 };
 
@@ -33,6 +34,7 @@ const EMPTY_CUSTOMER: Customer = {
   email: "",
   address: "",
   city: "",
+  state: "",
   pincode: "",
 };
 
@@ -43,9 +45,9 @@ function validate(c: Customer): Partial<Record<keyof Customer, TranslationKey>> 
   const errors: Partial<Record<keyof Customer, TranslationKey>> = {};
   if (c.name.trim().length < 2) errors.name = "err.name";
   if (!/^\+?[0-9\s-]{6,20}$/.test(c.phone.trim())) errors.phone = "err.phone";
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email.trim())) errors.email = "err.email";
   if (c.address.trim().length < 5) errors.address = "err.address";
   if (c.city.trim().length < 2) errors.city = "err.city";
+  if (c.state.trim().length < 2) errors.state = "err.state";
   if (!/^[A-Za-z0-9\s-]{4,12}$/.test(c.pincode.trim())) errors.pincode = "err.pincode";
   return errors;
 }
@@ -94,6 +96,7 @@ export default function CheckoutPage() {
             email: customer.email.trim(),
             address: customer.address.trim(),
             city: customer.city.trim(),
+            state: customer.state.trim(),
             pincode: customer.pincode.trim(),
             language,
           },
@@ -200,6 +203,7 @@ export default function CheckoutPage() {
             email: customer.email.trim(),
             address: customer.address.trim(),
             city: customer.city.trim(),
+            state: customer.state.trim(),
             pincode: customer.pincode.trim(),
             language,
           },
@@ -259,29 +263,16 @@ export default function CheckoutPage() {
               />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("checkout.phone")} error={fieldErrors.phone && t(fieldErrors.phone)}>
-                <input
-                  value={customer.phone}
-                  onChange={set("phone")}
-                  placeholder={`+${siteConfig.defaultCountryCode} 98765 43210`}
-                  inputMode="tel"
-                  autoComplete="tel"
-                  className="input"
-                />
-              </Field>
-
-              <Field label={t("checkout.email")} error={fieldErrors.email && t(fieldErrors.email)}>
-                <input
-                  value={customer.email}
-                  onChange={set("email")}
-                  placeholder="you@email.com"
-                  inputMode="email"
-                  autoComplete="email"
-                  className="input"
-                />
-              </Field>
-            </div>
+            <Field label={t("checkout.phone")} error={fieldErrors.phone && t(fieldErrors.phone)}>
+              <input
+                value={customer.phone}
+                onChange={set("phone")}
+                placeholder={`+${siteConfig.defaultCountryCode} 98765 43210`}
+                inputMode="tel"
+                autoComplete="tel"
+                className="input"
+              />
+            </Field>
 
             <Field label={t("checkout.address")} error={fieldErrors.address && t(fieldErrors.address)}>
               <textarea
@@ -291,6 +282,15 @@ export default function CheckoutPage() {
                 placeholder={t("checkout.addressPlaceholder")}
                 autoComplete="street-address"
                 className="input resize-none"
+              />
+            </Field>
+
+            <Field label={t("checkout.state")} error={fieldErrors.state && t(fieldErrors.state)}>
+              <input
+                value={customer.state}
+                onChange={set("state")}
+                placeholder="Maharashtra"
+                className="input"
               />
             </Field>
 
