@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { v2 as cloudinary } from "cloudinary";
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(req: NextRequest) {
   try {
+    // Validate credentials presence early
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      console.error("Cloudinary environment variables are missing.");
+      return NextResponse.json(
+        { error: "Upload server configuration error (missing credentials)" },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -15,31 +33,32 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure the uploads directory exists
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
+    // Upload to Cloudinary using upload_stream
+    const result = await new Promise<any>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder: "clothing-store",
+        },
+        (error, uploadResult) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(uploadResult);
+          }
+        }
+      ).end(buffer);
+    });
 
-    // Generate a unique filename using timestamp and original name
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    // Clean original filename to prevent issues with spaces/special characters
-    const safeOriginalName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const filename = `${uniqueSuffix}-${safeOriginalName}`;
-    const filepath = join(uploadsDir, filename);
-
-    // Write the file to public/uploads
-    await writeFile(filepath, buffer);
-
-    // Return the URL that can be used to access the image
-    const url = `/uploads/${filename}`;
+    // Return the secure URL from Cloudinary
+    const url = result.secure_url;
 
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error uploading file to Cloudinary:", error);
     return NextResponse.json(
       { error: "Failed to upload file" },
       { status: 500 }
     );
   }
 }
+
