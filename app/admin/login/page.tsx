@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +20,7 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
 
@@ -48,12 +49,26 @@ function LoginForm() {
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <label className="block">
             <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+              Email
+            </span>
+            <input
+              type="email"
+              required
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@example.com"
+              className="input mt-1.5"
+            />
+          </label>
+
+          <label className="block">
+            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
               Password
             </span>
             <input
               type="password"
               required
-              autoFocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input mt-1.5"

@@ -17,6 +17,7 @@ export const newProductSchema = z.object({
 });
 
 export const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
   password: z.string().min(1).max(200),
 });
 
