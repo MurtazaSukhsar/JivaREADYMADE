@@ -13,14 +13,14 @@ const config: Config = {
         carbon: "#120005",  // deeper bands (footer, hero scrim)
         slate: "#2A0010",   // raised surfaces: cards, inputs, image wells
         line: "#5C1020",    // borders / dividers
-        cream: "#F5EDE8",   // primary text (warm white)
-        ash: "#C49090",     // muted text
+        cream: "#FFFFFF",   // primary text (pure white)
+        ash: "#FFFFFF",     // muted text (pure white)
         ember: "#D91A3C",   // primary accent (crimson red)
         brass: "#E8956B",   // secondary accent (warm orange)
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "serif"],
-        body: ["var(--font-manrope)", "sans-serif"],
+        display: ["var(--font-outfit)", "sans-serif"],
+        body: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
       letterSpacing: {

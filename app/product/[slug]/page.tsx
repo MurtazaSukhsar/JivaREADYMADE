@@ -52,18 +52,10 @@ export default async function ProductPage({ params }: Props) {
         <ProductGallery images={product.images} alt={product.name} />
 
         <div className="lg:pt-2">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[13px] uppercase tracking-widest2 text-ember">
-                {product.styleCode}
-              </p>
-              <h1 className="mt-2 font-display text-4xl text-cream sm:text-5xl">
-                {product.name}
-              </h1>
-            </div>
-            <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-3 py-1.5 font-mono text-base text-cream">
-              {formatPrice(product.price, siteConfig.currency)}
-            </span>
+          <div>
+            <h1 className="font-display text-4xl text-cream sm:text-5xl">
+              {product.name}
+            </h1>
           </div>
 
           <p className="mt-6 max-w-md font-body text-base leading-loose text-ash">
@@ -84,7 +76,6 @@ export default async function ProductPage({ params }: Props) {
               {t("product.details")}
             </p>
             <ul className="mt-3 space-y-2 font-body text-base text-ash">
-              <li>{t("product.styleCode", { code: product.styleCode })}</li>
               <li>{t("product.shipsIn")}</li>
             </ul>
           </div>

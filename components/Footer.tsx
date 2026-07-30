@@ -14,13 +14,13 @@ export default function Footer() {
         </p>
         <Link
           href="/shop"
-          className="mt-6 inline-block font-mono text-xs uppercase tracking-widest2 text-ember transition-opacity hover:opacity-75"
+          className="mt-6 inline-block font-mono text-xs uppercase tracking-widest2 text-cream transition-opacity hover:opacity-75"
         >
           {t("footer.shopCollection")}
         </Link>
 
         <div className="mt-12 w-full border-t border-line/60 pt-6">
-          <p className="font-mono text-xs text-ash/60">
+          <p className="font-mono text-xs text-cream">
             © {new Date().getFullYear()} {siteConfig.name}
           </p>
         </div>

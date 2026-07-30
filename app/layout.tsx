@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope, Space_Mono } from "next/font/google";
+import { Outfit, Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,17 +11,16 @@ import { cookies } from "next/headers";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import LanguageSelectorModal from "@/components/LanguageSelectorModal";
 
-const fraunces = Fraunces({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  variable: "--font-outfit",
+  weight: ["400", "500", "600", "700"],
 });
 
-const manrope = Manrope({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-manrope",
-  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
 });
 
 const spaceMono = Space_Mono({
@@ -53,7 +52,7 @@ export default function RootLayout({
   return (
     <html lang={getLanguage()} className="dark">
       <body
-        className={`${fraunces.variable} ${manrope.variable} ${spaceMono.variable} min-h-screen bg-night font-body text-cream antialiased`}
+        className={`${outfit.variable} ${inter.variable} ${spaceMono.variable} min-h-screen bg-night font-body text-cream antialiased`}
       >
         <LanguageProvider initial={chosen}>
           <LanguageSelectorModal />

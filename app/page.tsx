@@ -87,7 +87,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/shop"
-            className="mt-6 inline-block rounded-sm border border-ember px-6 py-3 font-mono text-xs uppercase tracking-widest2 text-ember transition-all duration-200 hover:bg-ember hover:text-carbon"
+            className="mt-6 inline-block rounded-sm border border-cream px-6 py-3 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:bg-cream hover:text-carbon"
           >
             {t("home.browseCatalog")}
           </Link>

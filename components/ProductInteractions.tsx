@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatPrice } from "@/lib/format";
+import { siteConfig } from "@/lib/config";
 
 export default function ProductInteractions({
   slug,
@@ -22,14 +24,25 @@ export default function ProductInteractions({
 }) {
   const { addItem } = useCart();
   const { t } = useLanguage();
-  const [size, setSize] = useState<string | undefined>(sizes[0]);
+  const [size, setSize] = useState<string | undefined>(undefined);
   const [color, setColor] = useState<string | undefined>(colors[0]);
   const [added, setAdded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAdd = () => {
+    if (sizes.length > 0 && !size) {
+      setError(t("product.selectSizeError"));
+      return;
+    }
+    setError(null);
     addItem({ slug, name, price, image, size, color });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleSizeSelect = (s: string) => {
+    setSize(s);
+    setError(null);
   };
 
   const chip = (selected: boolean) =>
@@ -51,13 +64,18 @@ export default function ProductInteractions({
               <button
                 key={s}
                 type="button"
-                onClick={() => setSize(s)}
+                onClick={() => handleSizeSelect(s)}
                 className={chip(size === s)}
               >
                 {s}
               </button>
             ))}
           </div>
+          {error && (
+            <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-cream animate-pulse">
+              ⚠️ {error}
+            </p>
+          )}
         </div>
       )}
 
@@ -81,10 +99,19 @@ export default function ProductInteractions({
         </div>
       )}
 
+      <div className="mt-8 flex items-center justify-between border-t border-line/60 pt-5">
+        <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
+          {t("common.total")}
+        </p>
+        <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-4 py-1.5 font-mono text-xl font-bold text-cream">
+          {formatPrice(price, siteConfig.currency)}
+        </span>
+      </div>
+
       <button
         type="button"
         onClick={handleAdd}
-        className="mt-8 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
+        className="mt-4 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
       >
         {added ? t("product.added") : t("product.addToBag")}
       </button>

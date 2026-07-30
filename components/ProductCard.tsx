@@ -31,10 +31,6 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* bottom scrim keeps type legible over bright product shots */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-carbon/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-        <span className="absolute right-3 top-3 -rotate-6 rounded-sm border border-line bg-carbon/90 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-ash backdrop-blur transition-transform duration-300 group-hover:-rotate-3 group-hover:translate-y-0.5">
-          {product.styleCode}
-        </span>
       </div>
 
       <div className="mt-3 flex items-start justify-between gap-2">
