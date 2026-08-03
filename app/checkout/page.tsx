@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, getDeliveryFee, getCodAdvance } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { plural, type TranslationKey } from "@/lib/i18n";
@@ -56,6 +56,10 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clear } = useCart();
   const { t, language } = useLanguage();
+
+  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = getDeliveryFee(totalQty);
+  const advanceAmount = getCodAdvance(totalQty);
   const [scriptReady, setScriptReady] = useState(false);
   const [status, setStatus] = useState<"idle" | "creating" | "paying" | "verifying" | "creating_cod">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -400,11 +404,21 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <p className="font-mono text-sm uppercase tracking-widest2 text-ash">{t("common.total")}</p>
-            <p className="font-display text-2xl text-cream">{formatPrice(subtotal, siteConfig.currency)}</p>
+          <div className="mt-4 space-y-2.5 border-t border-line/30 pt-3">
+            <div className="flex justify-between text-sm">
+              <span className="font-mono uppercase tracking-widest2 text-ash/70">{t("confirm.cod.price")}</span>
+              <span className="font-body text-cream">{formatPrice(subtotal, siteConfig.currency)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="font-mono uppercase tracking-widest2 text-ash/70">{t("confirm.cod.courier")}</span>
+              <span className="font-body text-cream">{formatPrice(deliveryFee, siteConfig.currency)}</span>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-line/30">
+              <span className="font-mono text-sm uppercase tracking-widest2 text-ash">{t("common.total")}</span>
+              <span className="font-display text-2xl text-cream">{formatPrice(subtotal + deliveryFee, siteConfig.currency)}</span>
+            </div>
           </div>
-          <p className="mt-1 font-body text-xs text-ash/60">{t("checkout.estimateNote")}</p>
+          <p className="mt-1.5 font-body text-xs text-ash/60">{t("checkout.estimateNote")}</p>
 
           <div className="mt-6 border-t border-line/60 pt-5">
             <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 mb-3">
@@ -460,19 +474,19 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between">
                 <span>{t("confirm.cod.courier")}</span>
-                <span className="text-cream">{formatPrice(50, siteConfig.currency)}</span>
+                <span className="text-cream">{formatPrice(deliveryFee, siteConfig.currency)}</span>
               </div>
               <div className="flex justify-between font-semibold text-cream">
                 <span>{t("confirm.cod.total")}</span>
-                <span>{formatPrice(subtotal + 50, siteConfig.currency)}</span>
+                <span>{formatPrice(subtotal + deliveryFee, siteConfig.currency)}</span>
               </div>
               <div className="flex justify-between text-brass">
                 <span>{t("confirm.cod.advance")}</span>
-                <span>{formatPrice(100, siteConfig.currency)}</span>
+                <span>{formatPrice(advanceAmount, siteConfig.currency)}</span>
               </div>
               <div className="border-t border-line/30 pt-1.5 flex justify-between font-bold text-cream">
                 <span>{t("checkout.cod.dueOnDelivery")}</span>
-                <span className="text-ember">{formatPrice(Math.max(0, subtotal + 50 - 100), siteConfig.currency)}</span>
+                <span className="text-ember">{formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency)}</span>
               </div>
               <p className="mt-2.5 border-t border-line/30 pt-2 text-[11px] leading-relaxed text-ash/60">
                 {t("checkout.cod.advanceNote")}

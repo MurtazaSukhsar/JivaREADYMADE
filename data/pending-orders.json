@@ -1,0 +1,32 @@
+{
+  "0313599f-f2b3-466b-bc57-4d55ca6154b3": {
+    "id": "0313599f-f2b3-466b-bc57-4d55ca6154b3",
+    "items": [
+      {
+        "slug": "basic-jeans",
+        "name": "BASIC JEANS",
+        "price": 400,
+        "quantity": 1,
+        "size": "32",
+        "color": "Blue"
+      }
+    ],
+    "amount": 400,
+    "currency": "INR",
+    "status": "created",
+    "customer": {
+      "name": "Murtaza Sukhsrawala",
+      "phone": "+917043031553",
+      "email": "",
+      "address": "tirgarvas ,Near wellhems school",
+      "city": "lunavada",
+      "state": "Gujarat",
+      "pincode": "389230",
+      "language": "en"
+    },
+    "razorpayOrderId": "order_TLIHKcnv0UlJuO",
+    "shipped": false,
+    "createdAt": "2026-08-03T12:17:00.624Z",
+    "updatedAt": "2026-08-03T12:17:00.624Z"
+  }
+}

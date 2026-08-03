@@ -19,10 +19,10 @@ export default async function HomePage() {
         {/* Logo centered, fully visible — not cropped */}
         <div className="absolute inset-0 flex items-center justify-center">
           <Image
-            src="/file_0000000093108209ae4424970778dfdb.png"
+            src="/hero-banner.jpg"
             alt="Jiva Readymadewala"
-            width={700}
-            height={700}
+            width={1920}
+            height={1080}
             priority
             className="h-full w-full max-h-[86vh] object-contain select-none"
           />

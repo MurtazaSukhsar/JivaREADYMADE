@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderById } from "@/lib/orders";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, getDeliveryFee, getCodAdvance, isCodOrder } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
 import { getT } from "@/lib/i18n-server";
 import type { TranslationKey } from "@/lib/i18n";
@@ -17,6 +17,11 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
   // rather than shown raw to a customer.
   const statusLabel = t(`status.${order.status}` as TranslationKey);
 
+  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = getDeliveryFee(totalQty);
+  const advanceAmount = getCodAdvance(totalQty);
+
   return (
     <section className="mx-auto max-w-lg px-5 py-24 sm:px-8">
       {order.status === "paid" ? (
@@ -30,7 +35,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             {t("confirm.orderConfirmed", { id: order.id.slice(0, 8) })}
           </p>
         </>
-      ) : order.status === "cod_pending" ? (
+      ) : isCodOrder(order) ? (
         <>
           <p className="inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-ember">
             <span className="h-1.5 w-1.5 rounded-full bg-ember" />
@@ -86,43 +91,51 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
         </div>
       )}
 
-      {order.status === "cod_pending" ? (
+      {isCodOrder(order) ? (
         <div className="mt-6 rounded-sm border border-line/50 bg-slate/40 px-4 py-4 space-y-3 font-body text-sm text-ash">
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ember">
             {t("confirm.cod.breakdown")}
           </p>
           <div className="flex justify-between">
             <span>{t("confirm.cod.price")}</span>
-            <span className="text-cream">{formatPrice(order.amount, siteConfig.currency)}</span>
+            <span className="text-cream">{formatPrice(subtotal, siteConfig.currency)}</span>
           </div>
           <div className="flex justify-between">
             <span>{t("confirm.cod.courier")}</span>
-            <span className="text-cream">{formatPrice(50, siteConfig.currency)}</span>
+            <span className="text-cream">{formatPrice(deliveryFee, siteConfig.currency)}</span>
           </div>
           <div className="border-t border-line/40 pt-2 flex justify-between font-semibold text-cream">
             <span>{t("confirm.cod.total")}</span>
-            <span>{formatPrice(order.amount + 50, siteConfig.currency)}</span>
+            <span>{formatPrice(subtotal + deliveryFee, siteConfig.currency)}</span>
           </div>
           <div className="flex justify-between text-brass">
             <span>{t("confirm.cod.advance")}</span>
-            <span>{formatPrice(100, siteConfig.currency)}</span>
+            <span>{formatPrice(advanceAmount, siteConfig.currency)}</span>
           </div>
           <div className="border-t border-line/40 pt-2 flex justify-between font-bold text-cream text-lg">
             <span>{t("confirm.cod.deliveryPay")}</span>
-            <span className="text-ember">{formatPrice(Math.max(0, order.amount + 50 - 100), siteConfig.currency)}</span>
+            <span className="text-ember">{formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency)}</span>
           </div>
           <p className="mt-3 border-t border-line/30 pt-2.5 text-xs leading-relaxed text-ash/60">
-            {t("confirm.cod.advanceNote", { due: formatPrice(Math.max(0, order.amount + 50 - 100), siteConfig.currency) })}
+            {t("confirm.cod.advanceNote", { due: formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency) })}
           </p>
         </div>
       ) : (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="font-mono text-sm uppercase tracking-widest2 text-ash">
-            {t("confirm.totalPaid")}
-          </p>
-          <p className="font-display text-2xl text-cream">
-            {formatPrice(order.amount, siteConfig.currency)}
-          </p>
+        <div className="mt-6 rounded-sm border border-line/50 bg-slate/40 px-4 py-4 space-y-3 font-body text-sm text-ash">
+          <div className="flex justify-between">
+            <span>{t("confirm.cod.price")}</span>
+            <span className="text-cream">{formatPrice(subtotal, siteConfig.currency)}</span>
+          </div>
+          {order.amount - subtotal > 0 && (
+            <div className="flex justify-between">
+              <span>{t("confirm.cod.courier")}</span>
+              <span className="text-cream">{formatPrice(order.amount - subtotal, siteConfig.currency)}</span>
+            </div>
+          )}
+          <div className="border-t border-line/40 pt-2 flex justify-between font-bold text-cream text-lg">
+            <span>{t("confirm.totalPaid")}</span>
+            <span className="text-ember">{formatPrice(order.amount, siteConfig.currency)}</span>
+          </div>
         </div>
       )}
 

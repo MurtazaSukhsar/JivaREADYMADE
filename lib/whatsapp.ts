@@ -1,5 +1,5 @@
 import { Order } from "./types";
-import { formatPrice } from "./format";
+import { formatPrice, getDeliveryFee, getCodAdvance, isCodOrder } from "./format";
 import { siteConfig } from "./config";
 import type { Language } from "./i18n";
 
@@ -84,9 +84,62 @@ const TEMPLATES: Record<
   },
 };
 
+const LABELS: Record<Language, Record<string, string>> = {
+  en: {
+    price: "Price",
+    courier: "Courier Charge",
+    total: "Total",
+    advance: "Advance Payment",
+    due: "Delivery Time Payment",
+    totalPaid: "You have paid total",
+  },
+  hi: {
+    price: "कीमत",
+    courier: "कूरियर शुल्क",
+    total: "कुल योग",
+    advance: "अग्रिम भुगतान",
+    due: "डिलीवरी के समय भुगतान",
+    totalPaid: "आपने कुल भुगतान किया है",
+  },
+  gu: {
+    price: "કિંમત",
+    courier: "કુરિયર ચાર્જ",
+    total: "કુલ સરવાળો",
+    advance: "એડવાન્સ ચુકવણી",
+    due: "ડિલિવરી વખતે ચુકવણી",
+    totalPaid: "તમે કુલ ચૂકવેલ છે",
+  },
+};
+
 export function shippedMessage(order: Order): string {
   const tpl = TEMPLATES[order.customer.language] ?? TEMPLATES.en;
   const b = brand();
+  const lang = order.customer.language || "en";
+  const lbl = LABELS[lang] ?? LABELS.en;
+  const currency = order.currency || siteConfig.currency;
+
+  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = getDeliveryFee(totalQty);
+  const advanceAmount = getCodAdvance(totalQty);
+
+  let breakdown = "";
+  if (isCodOrder(order)) {
+    breakdown = [
+      `${lbl.price} : ${formatPrice(subtotal, currency)}`,
+      `${lbl.courier} : ${formatPrice(deliveryFee, currency)}`,
+      `${lbl.total} : ${formatPrice(subtotal + deliveryFee, currency)}`,
+      `${lbl.advance}  : ${formatPrice(advanceAmount, currency)}`,
+      `${lbl.due} : ${formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), currency)}`,
+    ].join("\n");
+  } else {
+    const courierPaid = Math.max(0, order.amount - subtotal);
+    breakdown = [
+      `${lbl.price} : ${formatPrice(subtotal, currency)}`,
+      ...(courierPaid > 0 ? [`${lbl.courier} : ${formatPrice(courierPaid, currency)}`] : []),
+      `${lbl.totalPaid} : ${formatPrice(order.amount, currency)}`,
+    ].join("\n");
+  }
 
   // Product names, sizes and colours come straight from the sheet and are
   // never translated — they're what's printed on the label.
@@ -106,7 +159,8 @@ export function shippedMessage(order: Order): string {
     ``,
     ...lines,
     ``,
-    tpl.total(formatPrice(order.amount, order.currency || siteConfig.currency)),
+    breakdown,
+    ``,
     ...(address ? [tpl.deliveringTo(address)] : []),
     ``,
     tpl.signoff(b),

@@ -194,35 +194,37 @@ export default function ManageProductsPage() {
                 }`}
               >
                 {/* Product header row */}
-                <div className="flex items-center gap-4 p-4">
-                  {/* Thumbnail */}
-                  <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-sm bg-carbon">
-                    {p.images[0] && (
-                      <Image
-                        src={p.images[0]}
-                        alt={p.name}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-display text-lg text-cream">{p.name}</p>
-                    <p className="font-mono text-xs text-ash">
-                      ₹{p.price.toLocaleString("en-IN")}
-                      {p.hidden && (
-                        <span className="ml-3 rounded-sm bg-ember/15 px-2 py-0.5 text-ember">
-                          Hidden
-                        </span>
+                <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Thumbnail */}
+                    <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-sm bg-carbon">
+                      {p.images[0] && (
+                        <Image
+                          src={p.images[0]}
+                          alt={p.name}
+                          fill
+                          sizes="48px"
+                          className="object-cover"
+                        />
                       )}
-                    </p>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate font-display text-lg text-cream">{p.name}</p>
+                      <p className="font-mono text-xs text-ash">
+                        ₹{p.price.toLocaleString("en-IN")}
+                        {p.hidden && (
+                          <span className="ml-3 rounded-sm bg-ember/15 px-2 py-0.5 text-ember">
+                            Hidden
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:shrink-0 justify-start sm:justify-end">
                     {/* Edit */}
                     {!isEditing && (
                       <button

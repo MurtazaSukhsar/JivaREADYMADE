@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getProductBySlug } from "@/lib/products";
-import { createOrder } from "@/lib/orders";
+import { savePendingOrder } from "@/lib/pending-orders";
 import { getRazorpayClient, toSubunits } from "@/lib/razorpay";
+import { getDeliveryFee } from "@/lib/format";
 import { createOrderSchema } from "@/lib/validation";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { isTrustedOrigin } from "@/lib/origin-check";
@@ -50,10 +51,14 @@ export async function POST(req: NextRequest) {
 
   const customer = parsed.data.customer;
 
-  const amount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  if (amount <= 0) {
+  const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (subtotal <= 0) {
     return NextResponse.json({ error: "Cart total must be greater than zero." }, { status: 400 });
   }
+
+  const totalQty = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = getDeliveryFee(totalQty);
+  const amount = subtotal + deliveryFee;
 
   const localOrderId = crypto.randomUUID();
 
@@ -73,19 +78,22 @@ export async function POST(req: NextRequest) {
 
   let order;
   try {
-    order = await createOrder({
+    const now = new Date().toISOString();
+    order = {
       id: localOrderId,
       items: orderItems,
       amount,
       currency: siteConfig.currency,
+      status: "created",
       customer,
       razorpayOrderId: razorpayOrder.id,
-    });
+      shipped: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    savePendingOrder(order);
   } catch (err) {
-    // The Razorpay order exists but we couldn't record ours, so refuse to
-    // open checkout — taking money for an order we can't look up later is
-    // worse than making the customer retry. Nothing has been charged yet.
-    console.error("Could not write the order to the sheet:", err);
+    console.error("Could not write the pending order:", err);
     return NextResponse.json(
       { error: "Could not save your order. Nothing was charged — please try again." },
       { status: 502 }

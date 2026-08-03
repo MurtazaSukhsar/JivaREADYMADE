@@ -159,6 +159,7 @@ export async function createOrder(input: {
   customer: Customer;
   razorpayOrderId: string;
   status?: Order["status"];
+  razorpayPaymentId?: string;
 }): Promise<Order> {
   const now = new Date().toISOString();
 
@@ -170,6 +171,7 @@ export async function createOrder(input: {
     status: input.status ?? "created",
     customer: input.customer,
     razorpayOrderId: input.razorpayOrderId,
+    razorpayPaymentId: input.razorpayPaymentId,
     shipped: false,
     createdAt: now,
     updatedAt: now,

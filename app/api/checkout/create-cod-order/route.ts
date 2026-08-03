@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getProductBySlug } from "@/lib/products";
-import { createOrder } from "@/lib/orders";
+import { savePendingOrder } from "@/lib/pending-orders";
 import { getRazorpayClient, toSubunits } from "@/lib/razorpay";
+import { getCodAdvance } from "@/lib/format";
 import { createOrderSchema } from "@/lib/validation";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { isTrustedOrigin } from "@/lib/origin-check";
@@ -52,13 +53,15 @@ export async function POST(req: NextRequest) {
   }
 
   const localOrderId = crypto.randomUUID();
+  const totalQty = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const advanceAmount = getCodAdvance(totalQty);
 
-  // Create a Razorpay order for exactly Rs 100 advance payment
+  // Create a Razorpay order for dynamic advance payment
   let razorpayOrder;
   try {
     const client = getRazorpayClient();
     razorpayOrder = await client.orders.create({
-      amount: 10000, // 100 INR in subunits (paise)
+      amount: toSubunits(advanceAmount),
       currency: siteConfig.currency,
       receipt: localOrderId,
     });
@@ -70,17 +73,22 @@ export async function POST(req: NextRequest) {
 
   let order;
   try {
-    order = await createOrder({
+    const now = new Date().toISOString();
+    order = {
       id: localOrderId,
       items: orderItems,
       amount,
       currency: siteConfig.currency,
+      status: "created",
       customer,
       razorpayOrderId: razorpayOrder.id,
-      status: "created", // Starts in "created" until advance payment is verified
-    });
+      shipped: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    savePendingOrder(order);
   } catch (err) {
-    console.error("Could not write the COD order to the sheet:", err);
+    console.error("Could not write the pending COD order:", err);
     return NextResponse.json(
       { error: "Could not save your order. Please try again." },
       { status: 502 }
@@ -90,7 +98,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     localOrderId: order.id,
     razorpayOrderId: razorpayOrder.id,
-    amountInSubunits: 10000, // Fixed 100 INR advance
+    amountInSubunits: toSubunits(advanceAmount),
     currency: siteConfig.currency,
     keyId: process.env.RAZORPAY_KEY_ID,
     prefill: {
