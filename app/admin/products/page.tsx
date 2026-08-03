@@ -28,18 +28,50 @@ type EditState = {
 };
 
 export default function ManageProductsPage() {
+  type ColorPair = { id: string; color: string; image: string };
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
+  const [colorPairs, setColorPairs] = useState<ColorPair[]>([]);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState<string | null>(null); // product id being saved
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const STANDARD_COLORS = [
+    "Pink",
+    "Light Blue",
+    "Violet",
+    "Dark Green",
+    "Grey",
+    "Light Green",
+    "Red",
+    "Blue",
+    "Green",
+    "Black",
+    "White",
+    "Yellow",
+    "Orange",
+    "Purple",
+    "Navy",
+    "Beige",
+    "Charcoal",
+    "Stone"
+  ];
+
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const addColorPair = () => {
+    setColorPairs([
+      ...colorPairs,
+      { id: Math.random().toString(36).substring(2, 9), color: "", image: "" }
+    ]);
   };
 
   const loadProducts = async () => {
@@ -62,29 +94,52 @@ export default function ManageProductsPage() {
 
   const startEdit = (p: Product) => {
     setEditingId(p.id);
+    const numColors = p.colors.length;
+    const generalImages = p.images.slice(numColors);
+
     setEditState({
       name: p.name,
       price: String(p.price),
       sizes: p.sizes.join(", "),
       colors: p.colors.join(", "),
       description: p.description,
-      images: p.images.join(", "),
+      images: generalImages.join(", "),
     });
+
+    const pairs = p.colors.map((c, idx) => ({
+      id: `${p.id}-color-${idx}`,
+      color: c,
+      image: p.images[idx] ?? "",
+    }));
+    setColorPairs(pairs);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditState(null);
+    setColorPairs([]);
   };
 
   const saveEdit = async (p: Product) => {
     if (!editState || !p.rowNumber) return;
     setSaving(p.id);
+
+    const finalColors = colorPairs.map(cp => cp.color.trim()).filter(Boolean);
+    const colorImages = colorPairs.map(cp => cp.image.trim()).filter(Boolean);
+    const generalImages = editState.images.split(",").map(img => img.trim()).filter(Boolean);
+    const finalImages = [...colorImages, ...generalImages];
+
+    const bodyToSubmit = {
+      ...editState,
+      colors: finalColors.join(", "),
+      images: finalImages.join(", "),
+    };
+
     try {
       const res = await fetch(`/api/products/${p.rowNumber}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editState),
+        body: JSON.stringify(bodyToSubmit),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -93,6 +148,7 @@ export default function ManageProductsPage() {
         showToast("Product updated ✓");
         setEditingId(null);
         setEditState(null);
+        setColorPairs([]);
         await loadProducts();
       }
     } catch {
@@ -314,16 +370,145 @@ export default function ManageProductsPage() {
                           onChange={(e) => setEditState({ ...editState, sizes: e.target.value })}
                         />
                       </label>
-                      <label className="block">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
-                          Colors (comma separated)
+                      <div className="sm:col-span-2 border-t border-line/40 pt-4 mt-2">
+                        <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 block mb-1">
+                          Color-Specific Options & Images (Optional)
                         </span>
-                        <input
-                          className="input mt-1"
-                          value={editState.colors}
-                          onChange={(e) => setEditState({ ...editState, colors: e.target.value })}
-                        />
-                      </label>
+                        <p className="font-body text-xs text-ash/60 mb-3">
+                          Add colors and upload/paste their corresponding images so the customer sees the correct image when selecting that color.
+                        </p>
+
+                        <div className="space-y-3">
+                          {colorPairs.map((pair, index) => (
+                            <div key={pair.id} className="rounded-sm border border-line/40 bg-slate/20 p-3 space-y-3">
+                              <div className="flex flex-col sm:flex-row gap-3">
+                                {/* Color Name Input */}
+                                <div className="flex-1">
+                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                                    Colour Name
+                                  </span>
+                                  <input
+                                    className="input text-xs"
+                                    placeholder="e.g. Grey, Pink, Lavender"
+                                    value={pair.color}
+                                    onChange={(e) => {
+                                      const newPairs = [...colorPairs];
+                                      newPairs[index].color = e.target.value;
+                                      setColorPairs(newPairs);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                                {/* Image Upload/URL for this color */}
+                                <div>
+                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                                    Colour Image
+                                  </span>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    {/* Thumbnail Preview */}
+                                    <div className="relative h-12 w-10 flex-shrink-0 overflow-hidden rounded-sm bg-carbon border border-line/40">
+                                      {pair.image ? (
+                                        <img
+                                          src={pair.image}
+                                          alt="preview"
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-[10px] font-mono text-ash/40">
+                                          No Img
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Upload Button */}
+                                    <div className="flex-1 flex flex-col gap-1.5">
+                                      <div className="flex items-center gap-2">
+                                        <label className="relative cursor-pointer rounded-sm border border-line/60 bg-slate/50 px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest2 text-cream hover:bg-slate/80 transition-colors">
+                                          <span>Upload Img</span>
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (!file) return;
+                                              
+                                              setUploadingIndex(index);
+                                              try {
+                                                const formData = new FormData();
+                                                formData.append("file", file);
+                                                
+                                                const res = await fetch("/api/upload", {
+                                                  method: "POST",
+                                                  body: formData,
+                                                });
+                                                
+                                                if (res.ok) {
+                                                  const data = await res.json();
+                                                  const newPairs = [...colorPairs];
+                                                  newPairs[index].image = data.url;
+                                                  setColorPairs(newPairs);
+                                                  showToast("Upload complete ✓");
+                                                } else {
+                                                  const data = await res.json().catch(() => ({}));
+                                                  showToast(data.error || "Upload failed", false);
+                                                }
+                                              } catch {
+                                                showToast("Upload failed", false);
+                                              } finally {
+                                                setUploadingIndex(null);
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                        {uploadingIndex === index && (
+                                          <span className="text-[10px] text-ember font-mono animate-pulse">Uploading...</span>
+                                        )}
+                                      </div>
+
+                                      {/* URL text field */}
+                                      <input
+                                        className="input text-xs"
+                                        placeholder="Or paste image URL"
+                                        value={pair.image}
+                                        onChange={(e) => {
+                                          const newPairs = [...colorPairs];
+                                          newPairs[index].image = e.target.value;
+                                          setColorPairs(newPairs);
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Remove Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newPairs = colorPairs.filter((_, i) => i !== index);
+                                        setColorPairs(newPairs);
+                                      }}
+                                      className="rounded-sm border border-ember/30 p-2 text-ember hover:bg-ember/10 transition-colors"
+                                      title="Remove color option"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={addColorPair}
+                          className="mt-3 rounded-sm border border-line/60 px-4 py-2 font-mono text-[10px] uppercase tracking-widest2 text-ash hover:border-cream/40 hover:text-cream transition-colors"
+                        >
+                          + Add Color Option
+                        </button>
+                      </div>
                       <label className="block sm:col-span-2">
                         <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
                           Description

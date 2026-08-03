@@ -1,40 +1,74 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductGallery({
   images,
   alt,
+  active: propActive,
+  onChangeActive,
 }: {
   images: string[];
   alt: string;
+  active?: number;
+  onChangeActive?: (index: number) => void;
 }) {
-  const [active, setActive] = useState(0);
+  const [localActive, setLocalActive] = useState(0);
   const { t } = useLanguage();
   const gallery = images.length > 0 ? images : ["https://picsum.photos/seed/placeholder/900/1125"];
+
+  const isControlled = propActive !== undefined;
+  const active = isControlled ? propActive : localActive;
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
+    if (target.clientWidth === 0) return;
     const index = Math.round(target.scrollLeft / target.clientWidth);
     if (index !== active && index >= 0 && index < gallery.length) {
-      setActive(index);
+      if (onChangeActive) {
+        onChangeActive(index);
+      } else {
+        setLocalActive(index);
+      }
     }
   };
 
   const scrollToImage = (index: number) => {
-    setActive(index);
+    if (onChangeActive) {
+      onChangeActive(index);
+    } else {
+      setLocalActive(index);
+    }
     if (scrollRef.current) {
       const container = scrollRef.current;
-      container.scrollTo({
-        left: container.clientWidth * index,
-        behavior: "smooth",
-      });
+      if (container.clientWidth > 0) {
+        container.scrollTo({
+          left: container.clientWidth * index,
+          behavior: "smooth",
+        });
+      }
     }
   };
+
+  // Sync scroll position when active changes externally
+  useEffect(() => {
+    if (isControlled && scrollRef.current) {
+      const container = scrollRef.current;
+      if (container.clientWidth > 0) {
+        const expectedLeft = container.clientWidth * active;
+        if (Math.abs(container.scrollLeft - expectedLeft) > 5) {
+          container.scrollTo({
+            left: expectedLeft,
+            behavior: "smooth",
+          });
+        }
+      }
+    }
+  }, [active, isControlled]);
 
   return (
     <div>

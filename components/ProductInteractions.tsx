@@ -15,6 +15,8 @@ export default function ProductInteractions({
   image,
   sizes,
   colors,
+  color: propColor,
+  onChangeColor,
 }: {
   slug: string;
   name: string;
@@ -22,14 +24,27 @@ export default function ProductInteractions({
   image: string;
   sizes: string[];
   colors: string[];
+  color?: string;
+  onChangeColor?: (color: string) => void;
 }) {
   const { addItem, clear } = useCart();
   const { t } = useLanguage();
   const router = useRouter();
   const [size, setSize] = useState<string | undefined>(undefined);
-  const [color, setColor] = useState<string | undefined>(colors[0]);
+  const [localColor, setLocalColor] = useState<string | undefined>(colors[0]);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isControlled = propColor !== undefined;
+  const color = isControlled ? propColor : localColor;
+
+  const handleColorSelect = (c: string) => {
+    if (onChangeColor) {
+      onChangeColor(c);
+    } else {
+      setLocalColor(c);
+    }
+  };
 
   const handleBuyNow = () => {
     if (sizes.length > 0 && !size) {
@@ -61,7 +76,7 @@ export default function ProductInteractions({
   const chip = (selected: boolean) =>
     `rounded-sm border px-3 py-1.5 font-mono text-xs uppercase transition-all duration-200 ${
       selected
-        ? "border-ember bg-ember/15 text-cream"
+         ? "border-ember bg-ember/15 text-cream"
         : "border-line text-ash hover:border-ash hover:text-cream"
     }`;
 
@@ -102,7 +117,7 @@ export default function ProductInteractions({
               <button
                 key={c}
                 type="button"
-                onClick={() => setColor(c)}
+                onClick={() => handleColorSelect(c)}
                 className={chip(color === c)}
               >
                 {c}

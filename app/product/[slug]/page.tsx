@@ -4,8 +4,7 @@ import type { Metadata } from "next";
 import { getProductBySlug, getAllProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
-import ProductGallery from "@/components/ProductGallery";
-import ProductInteractions from "@/components/ProductInteractions";
+import ProductDetailsSection from "@/components/ProductDetailsSection";
 import ProductCard from "@/components/ProductCard";
 import { getT } from "@/lib/i18n-server";
 
@@ -48,38 +47,8 @@ export default async function ProductPage({ params }: Props) {
         / <span className="text-cream">{product.name}</span>
       </nav>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-16">
-        <ProductGallery images={product.images} alt={product.name} />
-
-        <div className="lg:pt-2">
-          <div>
-            <h1 className="font-display text-4xl text-cream sm:text-5xl">
-              {product.name}
-            </h1>
-          </div>
-
-          <p className="mt-6 max-w-md font-body text-base leading-loose text-ash">
-            {product.description}
-          </p>
-
-          <ProductInteractions
-            slug={product.slug}
-            name={product.name}
-            price={product.price}
-            image={product.images[0] ?? ""}
-            sizes={product.sizes}
-            colors={product.colors}
-          />
-
-          <div className="mt-10 border-t border-line/60 pt-6">
-            <p className="font-mono text-[13px] uppercase tracking-widest2 text-ash/70">
-              {t("product.details")}
-            </p>
-            <ul className="mt-3 space-y-2 font-body text-base text-ash">
-              <li>{t("product.shipsIn")}</li>
-            </ul>
-          </div>
-        </div>
+      <div className="mt-6">
+        <ProductDetailsSection product={product} />
       </div>
 
       {related.length > 0 && (
