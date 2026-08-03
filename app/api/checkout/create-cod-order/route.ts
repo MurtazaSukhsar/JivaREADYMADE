@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getProductBySlug } from "@/lib/products";
 import { createOrder } from "@/lib/orders";
+import { getRazorpayClient, toSubunits } from "@/lib/razorpay";
 import { createOrderSchema } from "@/lib/validation";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { isTrustedOrigin } from "@/lib/origin-check";
@@ -52,6 +53,21 @@ export async function POST(req: NextRequest) {
 
   const localOrderId = crypto.randomUUID();
 
+  // Create a Razorpay order for exactly Rs 100 advance payment
+  let razorpayOrder;
+  try {
+    const client = getRazorpayClient();
+    razorpayOrder = await client.orders.create({
+      amount: 10000, // 100 INR in subunits (paise)
+      currency: siteConfig.currency,
+      receipt: localOrderId,
+    });
+  } catch (err: any) {
+    console.error("Razorpay error for COD advance:", err);
+    const message = err?.error?.description || err?.message || "Razorpay isn't configured yet.";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
   let order;
   try {
     order = await createOrder({
@@ -60,8 +76,8 @@ export async function POST(req: NextRequest) {
       amount,
       currency: siteConfig.currency,
       customer,
-      razorpayOrderId: "COD",
-      status: "cod_pending",
+      razorpayOrderId: razorpayOrder.id,
+      status: "created", // Starts in "created" until advance payment is verified
     });
   } catch (err) {
     console.error("Could not write the COD order to the sheet:", err);
@@ -73,5 +89,14 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     localOrderId: order.id,
+    razorpayOrderId: razorpayOrder.id,
+    amountInSubunits: 10000, // Fixed 100 INR advance
+    currency: siteConfig.currency,
+    keyId: process.env.RAZORPAY_KEY_ID,
+    prefill: {
+      name: customer.name,
+      email: customer.email,
+      contact: customer.phone,
+    },
   });
 }

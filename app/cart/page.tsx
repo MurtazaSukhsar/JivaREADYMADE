@@ -50,7 +50,7 @@ export default function CartPage() {
                     {[item.size, item.color].filter(Boolean).join(" · ")}
                   </p>
                 </div>
-                <p className="whitespace-nowrap font-mono text-sm text-cream">
+                <p className="whitespace-nowrap font-body text-sm text-cream">
                   {formatPrice(item.price, siteConfig.currency)}
                 </p>
               </div>

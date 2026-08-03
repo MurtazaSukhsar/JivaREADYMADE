@@ -31,23 +31,6 @@ export default async function HomePage() {
         {/* Radial vignette on edges for depth */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_40%,rgba(60,0,15,0.55)_100%)]" />
 
-        {/* Bottom gradient so text is always readable */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-
-        {/* Text / CTA */}
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-10 sm:px-8 sm:pb-16">
-          <div className="mx-auto max-w-6xl">
-            <h1 className="mt-3 max-w-2xl font-display text-4xl italic leading-[1.05] text-cream opacity-0 animate-riseIn [animation-delay:280ms] sm:text-6xl">
-              {t("home.heroTitle")}
-            </h1>
-            <Link
-              href="/shop"
-              className="mt-6 inline-block rounded-sm bg-cream px-6 py-3 font-mono text-xs uppercase tracking-widest2 text-carbon opacity-0 animate-riseIn [animation-delay:420ms] transition-all duration-200 hover:bg-ember hover:shadow-glow"
-            >
-              {t("home.shopEdit")}
-            </Link>
-          </div>
-        </div>
       </section>
 
 
@@ -77,21 +60,6 @@ export default async function HomePage() {
             ))}
           </div>
         )}
-      </section>
-
-      <section className="relative overflow-hidden border-y border-line/60 bg-slate px-5 py-16 text-center sm:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(80%_120%_at_50%_0%,rgba(217,26,60,0.18)_0%,transparent_70%)]" />
-        <div className="relative">
-          <p className="mx-auto max-w-xl font-display text-2xl italic text-cream sm:text-3xl">
-            {t("home.pullQuote")}
-          </p>
-          <Link
-            href="/shop"
-            className="mt-6 inline-block rounded-sm border border-cream px-6 py-3 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:bg-cream hover:text-carbon"
-          >
-            {t("home.browseCatalog")}
-          </Link>
-        </div>
       </section>
     </>
   );

@@ -61,6 +61,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, TranslationKey>>>({});
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setCustomer((c) => ({ ...c, [key]: e.target.value }));
@@ -217,8 +218,66 @@ export default function CheckoutPage() {
         return;
       }
 
-      clear();
-      router.push(`/order/${created.localOrderId}/confirmation`);
+      if (!scriptReady || !window.Razorpay) {
+        setError(t("err.scriptNotReady"));
+        setStatus("idle");
+        return;
+      }
+
+      setStatus("paying");
+
+      const rzp = new window.Razorpay({
+        key: created.keyId,
+        amount: created.amountInSubunits,
+        currency: created.currency,
+        order_id: created.razorpayOrderId,
+        name: siteConfig.name,
+        description: `COD Advance - ${siteConfig.name}`,
+        prefill: created.prefill,
+        theme: { color: "#D97B5D", backdrop_color: "#181B21" },
+        modal: {
+          ondismiss: () => {
+            setStatus("idle");
+          },
+        },
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          setStatus("verifying");
+          try {
+            const verifyRes = await fetch("/api/checkout/verify-cod", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                localOrderId: created.localOrderId,
+                ...response,
+              }),
+            });
+            const verified = await verifyRes.json();
+
+            if (!verifyRes.ok) {
+              setError(verified.error ?? t("err.notVerified"));
+              setStatus("idle");
+              return;
+            }
+
+            clear();
+            router.push(`/order/${verified.orderId}/confirmation`);
+          } catch {
+            setError(t("err.unconfirmed"));
+            setStatus("idle");
+          }
+        },
+      });
+
+      rzp.on("payment.failed", () => {
+        setError(t("err.paymentFailed"));
+        setStatus("idle");
+      });
+
+      rzp.open();
     } catch {
       setError(t("err.server"));
       setStatus("idle");
@@ -334,7 +393,7 @@ export default function CheckoutPage() {
                     {t("common.qty", { n: item.quantity })} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
                   </p>
                 </div>
-                <p className="font-mono text-sm text-cream">
+                <p className="font-body text-sm text-cream">
                   {formatPrice(item.price * item.quantity, siteConfig.currency)}
                 </p>
               </div>
@@ -347,27 +406,106 @@ export default function CheckoutPage() {
           </div>
           <p className="mt-1 font-body text-xs text-ash/60">{t("checkout.estimateNote")}</p>
 
-          <div className="mt-6 space-y-3">
-            <button
-              type="button"
-              onClick={handlePay}
-              disabled={status !== "idle"}
-              className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
-            >
-              {status === "idle" && t("checkout.pay")}
-              {status === "creating" && t("checkout.preparing")}
-              {status === "paying" && t("checkout.waiting")}
-              {status === "verifying" && t("checkout.confirming")}
-            </button>
-            <button
-              type="button"
-              onClick={handleCOD}
-              disabled={status !== "idle"}
-              className="w-full rounded-sm border border-ember text-ember py-3.5 font-mono text-xs uppercase tracking-widest2 transition-all duration-200 hover:bg-ember/10 disabled:opacity-50"
-            >
-              {status === "idle" && t("checkout.cod")}
-              {status === "creating_cod" && t("checkout.placingOrder")}
-            </button>
+          <div className="mt-6 border-t border-line/60 pt-5">
+            <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 mb-3">
+              {t("checkout.paymentMethod")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* Online payment option */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("online")}
+                className={`rounded-sm border p-4 text-left transition-all duration-200 ${
+                  paymentMethod === "online"
+                    ? "border-ember bg-ember/10"
+                    : "border-line/60 bg-slate/20 hover:border-ash/50"
+                }`}
+              >
+                <span className="block font-display text-sm font-semibold text-cream">
+                  {t("checkout.method.online")}
+                </span>
+                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
+                  {t("checkout.method.onlineSub")}
+                </span>
+              </button>
+
+              {/* COD option */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("cod")}
+                className={`rounded-sm border p-4 text-left transition-all duration-200 ${
+                  paymentMethod === "cod"
+                    ? "border-ember bg-ember/10"
+                    : "border-line/60 bg-slate/20 hover:border-ash/50"
+                }`}
+              >
+                <span className="block font-display text-sm font-semibold text-cream">
+                  {t("checkout.method.cod")}
+                </span>
+                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
+                  {t("checkout.method.codSub")}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {paymentMethod === "cod" && (
+            <div className="mt-5 rounded-sm border border-line/50 bg-slate/20 px-3.5 py-3 font-body text-xs text-ash/80 space-y-1.5 transition-all duration-200">
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-brass">
+                {t("checkout.cod.terms")}
+              </p>
+              <div className="flex justify-between">
+                <span>{t("confirm.cod.price")}</span>
+                <span className="text-cream">{formatPrice(subtotal, siteConfig.currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{t("confirm.cod.courier")}</span>
+                <span className="text-cream">{formatPrice(50, siteConfig.currency)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-cream">
+                <span>{t("confirm.cod.total")}</span>
+                <span>{formatPrice(subtotal + 50, siteConfig.currency)}</span>
+              </div>
+              <div className="flex justify-between text-brass">
+                <span>{t("confirm.cod.advance")}</span>
+                <span>{formatPrice(100, siteConfig.currency)}</span>
+              </div>
+              <div className="border-t border-line/30 pt-1.5 flex justify-between font-bold text-cream">
+                <span>{t("checkout.cod.dueOnDelivery")}</span>
+                <span className="text-ember">{formatPrice(Math.max(0, subtotal + 50 - 100), siteConfig.currency)}</span>
+              </div>
+              <p className="mt-2.5 border-t border-line/30 pt-2 text-[11px] leading-relaxed text-ash/60">
+                {t("checkout.cod.advanceNote")}
+              </p>
+            </div>
+          )}
+
+          <div className="mt-6">
+            {paymentMethod === "online" ? (
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={status !== "idle"}
+                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+              >
+                {status === "idle" && t("checkout.pay")}
+                {status === "creating" && t("checkout.preparing")}
+                {status === "paying" && t("checkout.waiting")}
+                {status === "verifying" && t("checkout.confirming")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCOD}
+                disabled={status !== "idle"}
+                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+              >
+                {status === "idle" && t("checkout.cod")}
+                {status === "creating_cod" && t("checkout.placingOrder")}
+                {status === "paying" && t("checkout.waiting")}
+                {status === "verifying" && t("checkout.confirming")}
+              </button>
+            )}
           </div>
 
           {error && (

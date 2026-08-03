@@ -122,7 +122,7 @@ export default function OrderCard({ order }: { order: Order }) {
                     </span>
                   )}
                 </span>
-                <span className="whitespace-nowrap font-mono text-xs text-ash">
+                <span className="whitespace-nowrap font-body text-xs text-ash">
                   {formatPrice(item.price * item.quantity, order.currency)}
                 </span>
               </li>
@@ -133,7 +133,7 @@ export default function OrderCard({ order }: { order: Order }) {
             <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
               Total
             </span>
-            <span className="font-mono text-sm text-cream">
+            <span className="font-body text-sm text-cream">
               {formatPrice(order.amount, order.currency)}
             </span>
           </div>

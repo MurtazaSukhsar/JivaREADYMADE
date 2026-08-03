@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,12 +23,24 @@ export default function ProductInteractions({
   sizes: string[];
   colors: string[];
 }) {
-  const { addItem } = useCart();
+  const { addItem, clear } = useCart();
   const { t } = useLanguage();
+  const router = useRouter();
   const [size, setSize] = useState<string | undefined>(undefined);
   const [color, setColor] = useState<string | undefined>(colors[0]);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleBuyNow = () => {
+    if (sizes.length > 0 && !size) {
+      setError(t("product.selectSizeError"));
+      return;
+    }
+    setError(null);
+    clear();
+    addItem({ slug, name, price, image, size, color });
+    router.push("/checkout");
+  };
 
   const handleAdd = () => {
     if (sizes.length > 0 && !size) {
@@ -103,15 +116,23 @@ export default function ProductInteractions({
         <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
           {t("common.total")}
         </p>
-        <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-4 py-1.5 font-mono text-xl font-bold text-cream">
+        <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-4 py-1.5 font-body text-xl font-bold text-cream">
           {formatPrice(price, siteConfig.currency)}
         </span>
       </div>
 
       <button
         type="button"
+        onClick={handleBuyNow}
+        className="mt-6 w-full rounded-sm bg-ember py-3.5 font-mono text-sm uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 hover:shadow-glow"
+      >
+        {t("product.buyNow")}
+      </button>
+
+      <button
+        type="button"
         onClick={handleAdd}
-        className="mt-4 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
+        className="mt-3 w-full rounded-sm bg-ember py-3.5 font-mono text-sm uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 hover:shadow-glow"
       >
         {added ? t("product.added") : t("product.addToBag")}
       </button>

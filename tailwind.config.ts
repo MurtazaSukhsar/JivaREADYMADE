@@ -19,8 +19,8 @@ const config: Config = {
         brass: "#E8956B",   // secondary accent (warm orange)
       },
       fontFamily: {
-        display: ["var(--font-outfit)", "sans-serif"],
-        body: ["var(--font-inter)", "sans-serif"],
+        display: ["var(--font-fraunces)", "serif"],
+        body: ["var(--font-manrope)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
       letterSpacing: {

@@ -118,7 +118,7 @@ export default function LanguageSelectorModal() {
 
           <h2
             style={{
-              fontFamily: "var(--font-outfit), sans-serif",
+              fontFamily: "var(--font-fraunces), serif",
               fontSize: "1.6rem",
               fontWeight: 500,
               color: "#F5EDE8",
@@ -131,7 +131,7 @@ export default function LanguageSelectorModal() {
           </h2>
           <p
             style={{
-              fontFamily: "var(--font-inter), sans-serif",
+              fontFamily: "var(--font-manrope), sans-serif",
               fontSize: "0.8rem",
               color: "#C49090",
               textAlign: "center",
@@ -190,7 +190,7 @@ export default function LanguageSelectorModal() {
                     justifyContent: "center",
                     flexShrink: 0,
                     fontSize: "1.15rem",
-                    fontFamily: "var(--font-outfit), sans-serif",
+                    fontFamily: "var(--font-fraunces), serif",
                     color: "#D91A3C",
                     fontWeight: 600,
                   }}
@@ -202,7 +202,7 @@ export default function LanguageSelectorModal() {
                   <span
                     style={{
                       display: "block",
-                      fontFamily: "var(--font-outfit), sans-serif",
+                      fontFamily: "var(--font-fraunces), serif",
                       fontSize: "1.05rem",
                       fontWeight: 500,
                       color: "#F5EDE8",
@@ -214,7 +214,7 @@ export default function LanguageSelectorModal() {
                   <span
                     style={{
                       display: "block",
-                      fontFamily: "var(--font-inter), sans-serif",
+                      fontFamily: "var(--font-manrope), sans-serif",
                       fontSize: "0.75rem",
                       color: "#C49090",
                       marginTop: "2px",
