@@ -1,8 +1,11 @@
 import { Order } from "./types";
 
 export function formatPrice(price: number, currency: string = "AED"): string {
-  const displayCurrency = currency === "INR" ? "Rs" : currency;
-  return `${price.toLocaleString("en-US")} ${displayCurrency}`;
+  if (currency === "INR") {
+    // Indian Rupee — prefix with ₹ symbol, no trailing text.
+    return `₹${price.toLocaleString("en-IN")}`;
+  }
+  return `${price.toLocaleString("en-US")} ${currency}`;
 }
 
 export function getDeliveryFee(totalQuantity: number): number {

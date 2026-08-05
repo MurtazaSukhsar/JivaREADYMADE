@@ -13,4 +13,20 @@ export const siteConfig = {
   // checkout (no leading "+"). Change this to match where you ship:
   // 91 India · 971 UAE · 44 UK · 1 US/Canada
   defaultCountryCode: "91",
+
+  // ── Business / Cashfree verification details ────────────────────────────
+  // Legal business name exactly as registered with Cashfree.
+  legalName: "Jivareadymade",
+  // Fill in your actual contact details below:
+  businessEmail: "Jivareadymade@gmail.com",
+  businessPhone: "+91 9724741872",
+  businessAddress: "Jiva Readymade, Nana Sutharwada, Dr. Polan School Road, Lunawada, Mahisagar, Gujarat – 389230",
+  workingHours: "Mon – Sat, 10 AM – 7 PM IST",
+
+  // Footer quick-links (shown in addition to the main nav).
+  footerLinks: [
+    { label: "Shop", href: "/shop" },
+    { label: "About Us", href: "/about" },
+    { label: "Contact Us", href: "/contact" },
+  ],
 };
