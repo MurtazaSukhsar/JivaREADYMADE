@@ -7,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { formatPrice, getDeliveryFee, getCodAdvance } from "@/lib/format";
 import { siteConfig } from "@/lib/config";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { plural, type TranslationKey } from "@/lib/i18n";
+import { type TranslationKey } from "@/lib/i18n";
 
 declare global {
   interface Window {
@@ -65,14 +65,20 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, TranslationKey>>>({});
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "cod">("upi");
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setCustomer((c) => ({ ...c, [key]: e.target.value }));
     setFieldErrors((f) => ({ ...f, [key]: undefined }));
   };
 
-  const handlePay = async () => {
+  // Paying by UPI: the server prices the cart, records a pending order and
+  // we hand the customer over to the dedicated payment page at /pay/[id].
+  //
+  // The cart is intentionally NOT cleared here. If they back out of the
+  // payment page, everything they picked is still waiting for them —
+  // /pay/[id] clears it once the payment is actually confirmed.
+  const handleUpi = async () => {
     setError(null);
 
     const errors = validate(customer);
@@ -85,7 +91,7 @@ export default function CheckoutPage() {
     setStatus("creating");
 
     try {
-      const createRes = await fetch("/api/checkout/create-order", {
+      const createRes = await fetch("/api/checkout/create-upi-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -115,66 +121,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (!scriptReady || !window.Razorpay) {
-        setError(t("err.scriptNotReady"));
-        setStatus("idle");
-        return;
-      }
-
       setStatus("paying");
-
-      const rzp = new window.Razorpay({
-        key: created.keyId,
-        amount: created.amountInSubunits,
-        currency: created.currency,
-        order_id: created.razorpayOrderId,
-        name: siteConfig.name,
-        description: plural(t, "checkout.orderDescription", items.length),
-        prefill: created.prefill,
-        theme: { color: "#D97B5D", backdrop_color: "#181B21" },
-        modal: {
-          ondismiss: () => {
-            setStatus("idle");
-          },
-        },
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          setStatus("verifying");
-          try {
-            const verifyRes = await fetch("/api/checkout/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                localOrderId: created.localOrderId,
-                ...response,
-              }),
-            });
-            const verified = await verifyRes.json();
-
-            if (!verifyRes.ok) {
-              setError(verified.error ?? t("err.notVerified"));
-              setStatus("idle");
-              return;
-            }
-
-            clear();
-            router.push(`/order/${verified.orderId}/confirmation`);
-          } catch {
-            setError(t("err.unconfirmed"));
-            setStatus("idle");
-          }
-        },
-      });
-
-      rzp.on("payment.failed", () => {
-        setError(t("err.paymentFailed"));
-        setStatus("idle");
-      });
-
-      rzp.open();
+      router.push(`/pay/${created.localOrderId}`);
     } catch {
       setError(t("err.server"));
       setStatus("idle");
@@ -425,21 +373,21 @@ export default function CheckoutPage() {
               {t("checkout.paymentMethod")}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
-              {/* Online payment option */}
+              {/* Pay by UPI QR — GPay, PhonePe, Paytm, any UPI app */}
               <button
                 type="button"
-                onClick={() => setPaymentMethod("online")}
+                onClick={() => setPaymentMethod("upi")}
                 className={`rounded-sm border p-4 text-left transition-all duration-200 ${
-                  paymentMethod === "online"
+                  paymentMethod === "upi"
                     ? "border-ember bg-ember/10"
                     : "border-line/60 bg-slate/20 hover:border-ash/50"
                 }`}
               >
                 <span className="block font-display text-sm font-semibold text-cream">
-                  {t("checkout.method.online")}
+                  {t("checkout.method.upi")}
                 </span>
                 <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
-                  {t("checkout.method.onlineSub")}
+                  {t("checkout.method.upiSub")}
                 </span>
               </button>
 
@@ -495,10 +443,10 @@ export default function CheckoutPage() {
           )}
 
           <div className="mt-6">
-            {paymentMethod === "online" ? (
+            {paymentMethod === "upi" ? (
               <button
                 type="button"
-                onClick={handlePay}
+                onClick={handleUpi}
                 disabled={status !== "idle"}
                 className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
               >

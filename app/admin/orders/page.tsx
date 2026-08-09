@@ -19,6 +19,9 @@ export default async function AdminOrdersPage() {
 
   const paid = orders.filter((o) => o.status === "paid");
   const awaitingShipment = paid.filter((o) => !o.shipped);
+  // UPI QR payments can't confirm themselves, so these are sitting waiting
+  // for someone to check the bank and press "mark paid".
+  const awaitingUpiCheck = orders.filter((o) => o.status === "upi_pending");
 
   return (
     <section className="mx-auto max-w-4xl px-5 py-14 sm:px-8">
@@ -37,6 +40,14 @@ export default async function AdminOrdersPage() {
           {paid.length} paid · {orders.length} total
         </p>
       </div>
+
+      {awaitingUpiCheck.length > 0 && (
+        <p className="mt-6 rounded-sm border border-ember/40 bg-ember/10 px-4 py-3 font-body text-sm text-ember">
+          {awaitingUpiCheck.length} UPI {awaitingUpiCheck.length === 1 ? "payment" : "payments"} to
+          check. Match the reference against your bank, then press &ldquo;mark paid&rdquo; on the
+          order.
+        </p>
+      )}
 
       {error && (
         <p className="mt-8 rounded-sm border border-ember/40 bg-ember/10 px-4 py-3 font-body text-sm text-ember">

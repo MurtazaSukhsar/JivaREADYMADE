@@ -62,6 +62,33 @@ export const shipOrderSchema = z.object({
   shipped: z.boolean(),
 });
 
+// What the customer types in after paying by UPI QR. Their app labels it
+// "UPI transaction ID", "UTR" or "Reference no." — usually 12 digits, but
+// PhonePe and a few banks issue longer alphanumeric ones, so this stays
+// permissive.
+//
+// DELIBERATELY OPTIONAL. It is a bookkeeping handle to search the bank
+// statement with, not proof of payment — the shop owner verifies against the
+// account either way. Making it mandatory doesn't stop a liar (who can type
+// twelve random digits) but does block an honest customer who can't find the
+// number, and a blocked customer is a lost sale. Orders without a reference
+// are still findable by amount, time and the `tr` on the statement.
+export const confirmUpiSchema = z.object({
+  localOrderId: z.string().trim().min(1).max(64),
+  upiRef: z
+    .string()
+    .trim()
+    .max(35)
+    .regex(/^[A-Za-z0-9]*$/, "Reference number can only contain letters and digits")
+    .optional()
+    .default(""),
+});
+
+// Admin-only: confirm by eye that a UPI payment landed in the bank.
+export const markPaidSchema = z.object({
+  paid: z.boolean(),
+});
+
 export const verifyPaymentSchema = z.object({
   localOrderId: z.string().trim().min(1),
   razorpay_order_id: z.string().trim().min(1),

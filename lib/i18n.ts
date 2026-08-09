@@ -102,8 +102,8 @@ const en = {
   "checkout.addressPlaceholder": "Flat / house no., building, street, area",
   "checkout.orderSummary": "Order summary",
   "checkout.estimateNote":
-    "This total is an estimate — Razorpay charges the amount our server confirms against the current catalog, not this number.",
-  "checkout.pay": "Pay with Razorpay",
+    "This total is an estimate — the amount in your payment app is the one our server confirms against the current catalog, not this number.",
+  "checkout.pay": "Pay by UPI",
   "checkout.preparing": "Preparing order…",
   "checkout.waiting": "Waiting for payment…",
   "checkout.confirming": "Confirming payment…",
@@ -114,11 +114,51 @@ const en = {
   "checkout.paymentMethod": "Payment Method",
   "checkout.method.online": "Pay Online",
   "checkout.method.onlineSub": "Pay full amount securely via Razorpay",
+  "checkout.method.upi": "UPI / GPay",
+  "checkout.method.upiSub": "Scan or tap — amount fills in automatically",
   "checkout.method.cod": "Cash on Delivery",
   "checkout.method.codSub": "Pay Rs 100 advance, rest on delivery",
   "checkout.placingOrder": "Placing order…",
   "checkout.orderDescription_one": "Order · {count} item",
   "checkout.orderDescription_other": "Order · {count} items",
+
+  // --- pay by UPI QR ---
+  "checkout.upi.title": "Pay by UPI",
+  "checkout.upi.amount": "Amount to pay",
+  "checkout.upi.amountNote":
+    "This amount is already filled in for you — you won't need to type it.",
+  "checkout.upi.openApp": "Pay in one tap",
+  "checkout.upi.didntWork": "Didn’t work? Pay by scanning instead",
+  "checkout.upi.hideQr": "Back to one-tap payment",
+  "checkout.upi.otherApp": "Any UPI app",
+  "checkout.upi.scan": "Pay by scanning",
+  "checkout.upi.saveQr": "Save QR image",
+  "checkout.upi.mobileStep1": "1. Tap “Save QR image” below to save it to your phone.",
+  "checkout.upi.mobileStep2":
+    "2. Open Google Pay, PhonePe or Paytm, tap Scan, then the gallery icon.",
+  "checkout.upi.mobileStep3": "3. Pick the saved image — the amount is already filled in.",
+  "checkout.upi.qrAlt": "UPI QR code with the payment amount filled in",
+  "checkout.upi.copy": "Copy",
+  "checkout.upi.copied": "Copied",
+  "checkout.upi.desktopStep1": "1. Open Google Pay, PhonePe, Paytm or any UPI app on your phone.",
+  "checkout.upi.desktopStep2": "2. Tap the scan button and point it at the code above.",
+  "checkout.upi.desktopStep3": "3. The amount is already filled in — just confirm the payment.",
+  "checkout.upi.afterPaying": "After you've paid",
+  "checkout.upi.refHelp":
+    "If your payment app shows a reference number (also called UPI transaction ID or UTR), enter it below — it helps us find your payment faster. You can leave it blank.",
+  "checkout.upi.refLabel": "UPI reference number",
+  "checkout.upi.refOptional": "(optional)",
+  "checkout.upi.submit": "I've paid — place my order",
+  "checkout.upi.submitting": "Placing order…",
+  "checkout.upi.cancel": "Back to payment options",
+  "checkout.upi.verifyNote":
+    "We check the payment against our account before dispatch. You'll get a WhatsApp message once it's confirmed.",
+
+  // --- the dedicated payment page (/pay/[id]) ---
+  "pay.payingTo": "Paying to",
+  "pay.orderRef": "Order",
+  "pay.delivery": "Delivery",
+  "pay.cancel": "Cancel and go back",
 
   // --- validation / errors ---
   "err.name": "Enter your full name",
@@ -128,6 +168,8 @@ const en = {
   "err.city": "Enter your city",
   "err.state": "Enter your district or state",
   "err.pincode": "Enter a valid pincode",
+  "err.upiRef":
+    "Enter the reference number from your payment app — letters and digits only.",
   "err.checkFields": "Check the highlighted fields before paying.",
   "err.checkFieldsOrder": "Check the highlighted fields before ordering.",
   "err.couldNotStart": "Could not start checkout.",
@@ -150,6 +192,11 @@ const en = {
   "confirm.whatsappNote": "We'll message {phone} on WhatsApp when it ships.",
   "confirm.codTitle": "Order Confirmed",
   "confirm.codBody": "Order {id} is confirmed. Please pay with cash when your package arrives.",
+  "confirm.upiTitle": "Order received",
+  "confirm.upiBody":
+    "Order {id} is with us. We're checking your UPI payment against our account — you'll get a WhatsApp message the moment it's confirmed, usually within a few hours.",
+  "confirm.upiRef": "Your reference",
+  "confirm.upiPending": "Payment being checked",
   "confirm.totalPaid": "Total paid",
   "confirm.totalToPay": "Total to pay",
   "confirm.continue": "Continue shopping",
@@ -168,6 +215,7 @@ const en = {
   "status.paid": "paid",
   "status.failed": "failed",
   "status.cod_pending": "cash on delivery",
+  "status.upi_pending": "payment being checked",
 };
 
 export type TranslationKey = keyof typeof en;
@@ -247,8 +295,8 @@ const hi: Dictionary = {
   "checkout.addressPlaceholder": "फ़्लैट / मकान नं., बिल्डिंग, गली, इलाका",
   "checkout.orderSummary": "ऑर्डर सारांश",
   "checkout.estimateNote":
-    "यह राशि अनुमानित है — Razorpay वही रकम लेगा जो हमारा सर्वर मौजूदा कैटलॉग से पक्की करेगा, यह संख्या नहीं।",
-  "checkout.pay": "Razorpay से भुगतान करें",
+    "यह राशि अनुमानित है — आपके पेमेंट ऐप में जो रकम दिखेगी वही हमारा सर्वर मौजूदा कैटलॉग से पक्की करेगा, यह संख्या नहीं।",
+  "checkout.pay": "UPI से भुगतान करें",
   "checkout.preparing": "ऑर्डर तैयार हो रहा है…",
   "checkout.waiting": "भुगतान की प्रतीक्षा…",
   "checkout.confirming": "भुगतान की पुष्टि हो रही है…",
@@ -259,11 +307,48 @@ const hi: Dictionary = {
   "checkout.paymentMethod": "भुगतान विधि",
   "checkout.method.online": "ऑनलाइन भुगतान",
   "checkout.method.onlineSub": "Razorpay के ज़रिए सुरक्षित भुगतान करें",
+  "checkout.method.upi": "UPI / GPay",
+  "checkout.method.upiSub": "स्कैन या टैप करें — रकम अपने आप भर जाएगी",
   "checkout.method.cod": "कैश ऑन डिलीवरी",
   "checkout.method.codSub": "100 रुपये अग्रिम, बाकी डिलीवरी पर",
   "checkout.placingOrder": "ऑर्डर दर्ज हो रहा है…",
   "checkout.orderDescription_one": "ऑर्डर · {count} वस्तु",
   "checkout.orderDescription_other": "ऑर्डर · {count} वस्तुएँ",
+
+  "checkout.upi.title": "UPI से भुगतान",
+  "checkout.upi.amount": "देय राशि",
+  "checkout.upi.amountNote": "यह रकम पहले से भरी हुई है — आपको टाइप नहीं करनी पड़ेगी।",
+  "checkout.upi.openApp": "एक टैप में भुगतान करें",
+  "checkout.upi.didntWork": "काम नहीं किया? स्कैन करके भुगतान करें",
+  "checkout.upi.hideQr": "वापस एक-टैप भुगतान पर",
+  "checkout.upi.otherApp": "कोई भी UPI ऐप",
+  "checkout.upi.scan": "स्कैन करके भुगतान करें",
+  "checkout.upi.saveQr": "QR इमेज सेव करें",
+  "checkout.upi.mobileStep1": "1. नीचे “QR इमेज सेव करें” दबाकर इसे फ़ोन में सेव करें।",
+  "checkout.upi.mobileStep2":
+    "2. Google Pay, PhonePe या Paytm खोलें, Scan दबाएँ, फिर गैलरी आइकन चुनें।",
+  "checkout.upi.mobileStep3": "3. सेव की हुई इमेज चुनें — रकम पहले से भरी होगी।",
+  "checkout.upi.qrAlt": "रकम सहित UPI QR कोड",
+  "checkout.upi.copy": "कॉपी",
+  "checkout.upi.copied": "कॉपी हुआ",
+  "checkout.upi.desktopStep1": "1. अपने फ़ोन में Google Pay, PhonePe, Paytm या कोई भी UPI ऐप खोलें।",
+  "checkout.upi.desktopStep2": "2. स्कैन बटन दबाएँ और ऊपर बने कोड पर कैमरा रखें।",
+  "checkout.upi.desktopStep3": "3. रकम पहले से भरी होगी — बस भुगतान पक्का करें।",
+  "checkout.upi.afterPaying": "भुगतान के बाद",
+  "checkout.upi.refHelp":
+    "अगर आपके पेमेंट ऐप में रेफ़रेंस नंबर (UPI ट्रांज़ैक्शन आईडी या UTR) दिखे, तो उसे नीचे भरें — इससे हमें आपका भुगतान जल्दी मिल जाएगा। खाली भी छोड़ सकते हैं।",
+  "checkout.upi.refLabel": "UPI रेफ़रेंस नंबर",
+  "checkout.upi.refOptional": "(वैकल्पिक)",
+  "checkout.upi.submit": "भुगतान हो गया — ऑर्डर दर्ज करें",
+  "checkout.upi.submitting": "ऑर्डर दर्ज हो रहा है…",
+  "checkout.upi.cancel": "भुगतान विकल्पों पर वापस",
+  "checkout.upi.verifyNote":
+    "भेजने से पहले हम अपने खाते में भुगतान जाँच लेते हैं। पुष्टि होते ही आपको व्हाट्सऐप संदेश मिलेगा।",
+
+  "pay.payingTo": "भुगतान पाने वाले",
+  "pay.orderRef": "ऑर्डर",
+  "pay.delivery": "डिलीवरी",
+  "pay.cancel": "रद्द करके वापस जाएँ",
 
   "err.name": "अपना पूरा नाम भरें",
   "err.phone": "सही फ़ोन नंबर भरें",
@@ -272,6 +357,7 @@ const hi: Dictionary = {
   "err.city": "अपना शहर भरें",
   "err.state": "अपना जिला या राज्य भरें",
   "err.pincode": "सही पिनकोड भरें",
+  "err.upiRef": "अपने पेमेंट ऐप का रेफ़रेंस नंबर भरें — केवल अक्षर और अंक।",
   "err.checkFields": "भुगतान से पहले चिह्नित जगहें जाँच लें।",
   "err.checkFieldsOrder": "ऑर्डर से पहले चिह्नित जगहें जाँच लें।",
   "err.couldNotStart": "चेकआउट शुरू नहीं हो सका।",
@@ -293,6 +379,11 @@ const hi: Dictionary = {
   "confirm.whatsappNote": "भेजते समय हम {phone} पर व्हाट्सऐप संदेश भेजेंगे।",
   "confirm.codTitle": "ऑर्डर पक्का हो गया",
   "confirm.codBody": "ऑर्डर {id} पक्का हो गया। पार्सल पहुँचने पर नकद भुगतान करें।",
+  "confirm.upiTitle": "ऑर्डर मिल गया",
+  "confirm.upiBody":
+    "ऑर्डर {id} हमें मिल गया है। हम आपका UPI भुगतान अपने खाते में जाँच रहे हैं — पुष्टि होते ही आपको व्हाट्सऐप संदेश मिलेगा, आमतौर पर कुछ घंटों में।",
+  "confirm.upiRef": "आपका रेफ़रेंस",
+  "confirm.upiPending": "भुगतान जाँचा जा रहा है",
   "confirm.totalPaid": "कुल भुगतान",
   "confirm.totalToPay": "देय राशि",
   "confirm.continue": "खरीदारी जारी रखें",
@@ -310,6 +401,7 @@ const hi: Dictionary = {
   "status.paid": "भुगतान हुआ",
   "status.failed": "विफल",
   "status.cod_pending": "डिलीवरी पर नकद",
+  "status.upi_pending": "भुगतान जाँचा जा रहा है",
 };
 
 const gu: Dictionary = {
@@ -386,8 +478,8 @@ const gu: Dictionary = {
   "checkout.addressPlaceholder": "ફ્લેટ / મકાન નં., બિલ્ડિંગ, શેરી, વિસ્તાર",
   "checkout.orderSummary": "ઓર્ડર સારાંશ",
   "checkout.estimateNote":
-    "આ રકમ અંદાજિત છે — Razorpay એ જ રકમ લેશે જે અમારું સર્વર હાલના કૅટલોગથી નક્કી કરશે, આ સંખ્યા નહીં.",
-  "checkout.pay": "Razorpay થી ચુકવણી કરો",
+    "આ રકમ અંદાજિત છે — તમારી પેમેન્ટ એપમાં દેખાતી રકમ જ અમારું સર્વર હાલના કૅટલોગથી નક્કી કરશે, આ સંખ્યા નહીં.",
+  "checkout.pay": "UPI થી ચુકવણી કરો",
   "checkout.preparing": "ઓર્ડર તૈયાર થઈ રહ્યો છે…",
   "checkout.waiting": "ચુકવણીની રાહ…",
   "checkout.confirming": "ચુકવણીની ખાતરી થઈ રહી છે…",
@@ -398,11 +490,48 @@ const gu: Dictionary = {
   "checkout.paymentMethod": "ચુકવણી પદ્ધતિ",
   "checkout.method.online": "ઓનલાઇન ચુકવણી",
   "checkout.method.onlineSub": "Razorpay દ્વારા સુરક્ષિત ચુકવણી કરો",
+  "checkout.method.upi": "UPI / GPay",
+  "checkout.method.upiSub": "સ્કેન કરો કે ટૅપ કરો — રકમ આપોઆપ ભરાઈ જશે",
   "checkout.method.cod": "કૅશ ઓન ડિલિવરી",
   "checkout.method.codSub": "100 રૂપિયા એડવાન્સ, બાકી ડિલિવરી વખતે",
   "checkout.placingOrder": "ઓર્ડર નોંધાઈ રહ્યો છે…",
   "checkout.orderDescription_one": "ઓર્ડર · {count} વસ્તુ",
   "checkout.orderDescription_other": "ઓર્ડર · {count} વસ્તુઓ",
+
+  "checkout.upi.title": "UPI થી ચુકવણી",
+  "checkout.upi.amount": "ચૂકવવાની રકમ",
+  "checkout.upi.amountNote": "આ રકમ પહેલેથી ભરેલી છે — તમારે ટાઇપ કરવાની જરૂર નથી.",
+  "checkout.upi.openApp": "એક ટૅપમાં ચુકવણી કરો",
+  "checkout.upi.didntWork": "કામ ન થયું? સ્કેન કરીને ચુકવણી કરો",
+  "checkout.upi.hideQr": "પાછા એક-ટૅપ ચુકવણી પર",
+  "checkout.upi.otherApp": "કોઈ પણ UPI એપ",
+  "checkout.upi.scan": "સ્કેન કરીને ચુકવણી કરો",
+  "checkout.upi.saveQr": "QR ઇમેજ સેવ કરો",
+  "checkout.upi.mobileStep1": "1. નીચે “QR ઇમેજ સેવ કરો” દબાવીને તેને ફોનમાં સેવ કરો.",
+  "checkout.upi.mobileStep2":
+    "2. Google Pay, PhonePe કે Paytm ખોલો, Scan દબાવો, પછી ગેલેરી આઇકન પસંદ કરો.",
+  "checkout.upi.mobileStep3": "3. સેવ કરેલી ઇમેજ પસંદ કરો — રકમ પહેલેથી ભરેલી હશે.",
+  "checkout.upi.qrAlt": "રકમ સાથેનો UPI QR કોડ",
+  "checkout.upi.copy": "કૉપી",
+  "checkout.upi.copied": "કૉપી થયું",
+  "checkout.upi.desktopStep1": "1. તમારા ફોનમાં Google Pay, PhonePe, Paytm કે કોઈ પણ UPI એપ ખોલો.",
+  "checkout.upi.desktopStep2": "2. સ્કેન બટન દબાવો અને ઉપરના કોડ પર કૅમેરા રાખો.",
+  "checkout.upi.desktopStep3": "3. રકમ પહેલેથી ભરેલી હશે — બસ ચુકવણી પાકી કરો.",
+  "checkout.upi.afterPaying": "ચુકવણી પછી",
+  "checkout.upi.refHelp":
+    "જો તમારી પેમેન્ટ એપમાં રેફરન્સ નંબર (UPI ટ્રાન્ઝેક્શન આઈડી કે UTR) દેખાય, તો તે નીચે ભરો — તેથી અમને તમારી ચુકવણી ઝડપથી મળી જશે. ખાલી પણ છોડી શકો છો.",
+  "checkout.upi.refLabel": "UPI રેફરન્સ નંબર",
+  "checkout.upi.refOptional": "(વૈકલ્પિક)",
+  "checkout.upi.submit": "ચુકવણી થઈ ગઈ — ઓર્ડર નોંધો",
+  "checkout.upi.submitting": "ઓર્ડર નોંધાઈ રહ્યો છે…",
+  "checkout.upi.cancel": "ચુકવણી વિકલ્પો પર પાછા",
+  "checkout.upi.verifyNote":
+    "મોકલતાં પહેલાં અમે અમારા ખાતામાં ચુકવણી તપાસી લઈએ છીએ. ખાતરી થતાં જ તમને વૉટ્સએપ સંદેશ મળશે.",
+
+  "pay.payingTo": "ચુકવણી મેળવનાર",
+  "pay.orderRef": "ઓર્ડર",
+  "pay.delivery": "ડિલિવરી",
+  "pay.cancel": "રદ કરીને પાછા જાઓ",
 
   "err.name": "તમારું પૂરું નામ ભરો",
   "err.phone": "સાચો ફોન નંબર ભરો",
@@ -411,6 +540,7 @@ const gu: Dictionary = {
   "err.city": "તમારું શહેર ભરો",
   "err.state": "તમારો જિલ્લો અથવા રાજ્ય ભરો",
   "err.pincode": "સાચો પિનકોડ ભરો",
+  "err.upiRef": "તમારી પેમેન્ટ એપનો રેફરન્સ નંબર ભરો — ફક્ત અક્ષરો અને અંક.",
   "err.checkFields": "ચુકવણી પહેલાં ચિહ્નિત ખાનાં તપાસી લો.",
   "err.checkFieldsOrder": "ઓર્ડર પહેલાં ચિહ્નિત ખાનાં તપાસી લો.",
   "err.couldNotStart": "ચેકઆઉટ શરૂ ન થઈ શક્યું.",
@@ -432,6 +562,11 @@ const gu: Dictionary = {
   "confirm.whatsappNote": "મોકલતી વખતે અમે {phone} પર વૉટ્સએપ સંદેશ મોકલીશું.",
   "confirm.codTitle": "ઓર્ડર નક્કી થઈ ગયો",
   "confirm.codBody": "ઓર્ડર {id} નક્કી થઈ ગયો. પાર્સલ પહોંચે ત્યારે રોકડ ચુકવણી કરો.",
+  "confirm.upiTitle": "ઓર્ડર મળી ગયો",
+  "confirm.upiBody":
+    "ઓર્ડર {id} અમને મળી ગયો છે. અમે તમારી UPI ચુકવણી અમારા ખાતામાં તપાસી રહ્યા છીએ — ખાતરી થતાં જ તમને વૉટ્સએપ સંદેશ મળશે, સામાન્ય રીતે થોડા કલાકોમાં.",
+  "confirm.upiRef": "તમારો રેફરન્સ",
+  "confirm.upiPending": "ચુકવણી તપાસાઈ રહી છે",
   "confirm.totalPaid": "કુલ ચુકવણી",
   "confirm.totalToPay": "ચૂકવવાની રકમ",
   "confirm.continue": "ખરીદી ચાલુ રાખો",
@@ -449,6 +584,7 @@ const gu: Dictionary = {
   "status.paid": "ચુકવાયેલો",
   "status.failed": "નિષ્ફળ",
   "status.cod_pending": "ડિલિવરી પર રોકડ",
+  "status.upi_pending": "ચુકવણી તપાસાઈ રહી છે",
 };
 
 const dictionaries: Record<Language, Dictionary> = { en, hi, gu };

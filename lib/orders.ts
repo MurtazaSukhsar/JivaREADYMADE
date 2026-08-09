@@ -98,7 +98,12 @@ function parseRow(row: string[], rowNumber: number): Order | null {
 
   const statusRaw = cell(row, 2).toLowerCase();
   const status: Order["status"] =
-    statusRaw === "paid" || statusRaw === "failed" || statusRaw === "cod_pending" ? statusRaw : "created";
+    statusRaw === "paid" ||
+    statusRaw === "failed" ||
+    statusRaw === "cod_pending" ||
+    statusRaw === "upi_pending"
+      ? statusRaw
+      : "created";
 
   const shippedRaw = cell(row, 14).toLowerCase();
   const languageRaw = cell(row, 17).toLowerCase();
@@ -228,6 +233,44 @@ export async function markOrderCodPending(
 
   order.status = "cod_pending";
   order.razorpayPaymentId = paymentId;
+  order.updatedAt = new Date().toISOString();
+  await writeRow(order);
+  return order;
+}
+
+/**
+ * The customer scanned the UPI QR and submitted their reference number.
+ * Nothing has been checked against the bank yet — this only records the
+ * claim so it shows up in the admin panel for someone to verify.
+ */
+export async function markOrderUpiPending(
+  orderId: string,
+  upiRef: string
+): Promise<Order | null> {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+  // Already settled by hand? Don't drag a paid order backwards because
+  // someone reloaded the confirmation page.
+  if (order.status === "paid") return order;
+
+  order.status = "upi_pending";
+  order.razorpayPaymentId = upiRef;
+  order.updatedAt = new Date().toISOString();
+  await writeRow(order);
+  return order;
+}
+
+/**
+ * Admin confirming, by eye, that a UPI payment actually landed. Separate
+ * from markOrderPaid() because there's no Razorpay order id to look up —
+ * the human is the verification step here.
+ */
+export async function markOrderPaidById(orderId: string): Promise<Order | null> {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+  if (order.status === "paid") return order;
+
+  order.status = "paid";
   order.updatedAt = new Date().toISOString();
   await writeRow(order);
   return order;

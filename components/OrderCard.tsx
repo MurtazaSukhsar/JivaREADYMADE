@@ -23,10 +23,40 @@ function formatDate(iso: string): string {
 export default function OrderCard({ order }: { order: Order }) {
   const router = useRouter();
   const [shipped, setShipped] = useState(order.shipped);
+  const [status, setStatus] = useState(order.status);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState(false);
   const [message, setMessage] = useState(() => shippedMessage(order));
+
+  // UPI QR payments arrive with no confirmation from the bank — the customer
+  // just types in the reference number their app showed them. So this order
+  // is a *claim* of payment until someone checks the account and presses the
+  // button below.
+  const awaitingUpiCheck = status === "upi_pending";
+
+  const markPaid = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paid: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not mark the order paid.");
+        return;
+      }
+      setStatus("paid");
+      router.refresh();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const toggleShipped = async (next: boolean) => {
     setBusy(true);
@@ -52,11 +82,13 @@ export default function OrderCard({ order }: { order: Order }) {
   };
 
   const statusTone =
-    order.status === "paid"
+    status === "paid"
       ? "border-brass/40 bg-brass/10 text-brass"
-      : order.status === "failed"
+      : status === "failed"
         ? "border-ember/40 bg-ember/10 text-ember"
-        : "border-line bg-slate text-ash";
+        : status === "upi_pending"
+          ? "border-ember/50 bg-ember/10 text-ember"
+          : "border-line bg-slate text-ash";
 
   return (
     <article className="rounded-sm border border-line/60 bg-slate/40 p-5 sm:p-6">
@@ -72,7 +104,7 @@ export default function OrderCard({ order }: { order: Order }) {
           <span
             className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest2 ${statusTone}`}
           >
-            {order.status}
+            {status === "upi_pending" ? "UPI · check bank" : status}
           </span>
           <span
             className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest2 ${
@@ -137,7 +169,7 @@ export default function OrderCard({ order }: { order: Order }) {
               {formatPrice(order.amount, order.currency)}
             </span>
           </div>
-          {order.razorpayPaymentId && (
+          {order.razorpayPaymentId && !awaitingUpiCheck && (
             <p className="mt-1 font-mono text-[11px] text-ash/60">
               Payment {order.razorpayPaymentId}
             </p>
@@ -145,7 +177,57 @@ export default function OrderCard({ order }: { order: Order }) {
         </div>
       </div>
 
+      {awaitingUpiCheck && (
+        <div className="mt-5 rounded-sm border border-ember/40 bg-ember/5 px-4 py-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-widest2 text-ember">
+            Paid by UPI — needs checking
+          </p>
+          <p className="mt-2 font-body text-xs leading-relaxed text-ash">
+            The customer says they sent{" "}
+            <span className="text-cream">{formatPrice(order.amount, order.currency)}</span>. Open
+            your bank or GPay history and look for this reference before you pack anything.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                Their UPI reference
+              </p>
+              {order.razorpayPaymentId ? (
+                <p className="mt-1 select-all break-all font-mono text-sm text-cream">
+                  {order.razorpayPaymentId}
+                </p>
+              ) : (
+                // The reference is optional, so this is common and not a red
+                // flag on its own — match by amount and time instead.
+                <p className="mt-1 font-body text-xs italic text-ash/70">
+                  Not given — match by amount and time, or by our reference.
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                Our reference (on your statement)
+              </p>
+              <p className="mt-1 select-all break-all font-mono text-sm text-cream">
+                {order.razorpayOrderId || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line/50 pt-4">
+        {awaitingUpiCheck && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={markPaid}
+            className="rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-carbon transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Money received — mark paid"}
+          </button>
+        )}
+
         <button
           type="button"
           disabled={busy}

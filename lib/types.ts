@@ -54,9 +54,17 @@ export type Order = {
   items: OrderItem[];
   amount: number;
   currency: string;
-  status: "created" | "paid" | "failed" | "cod_pending";
+  // "upi_pending" — the customer scanned the UPI QR and told us they paid,
+  // but nobody has checked the bank yet. UPI QR payments have no callback,
+  // so this is the one status that only a human can clear (admin → Mark
+  // paid). Treat it as "money probably arrived", never as "money arrived".
+  status: "created" | "paid" | "failed" | "cod_pending" | "upi_pending";
   customer: Customer;
+  // For UPI orders this holds the `tr` reference we generated and sent in
+  // the payment link, not a Razorpay order — same column, same purpose.
   razorpayOrderId: string;
+  // For UPI orders this is the reference number the customer typed in after
+  // paying (their app calls it "UPI transaction ID" / "UTR").
   razorpayPaymentId?: string;
   shipped: boolean;
   shippedAt?: string;

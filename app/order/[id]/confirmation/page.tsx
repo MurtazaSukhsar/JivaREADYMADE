@@ -35,6 +35,27 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             {t("confirm.orderConfirmed", { id: order.id.slice(0, 8) })}
           </p>
         </>
+      ) : order.status === "upi_pending" ? (
+        /* Paid by UPI QR. The money is very likely in the account, but
+           nothing has checked it yet — so this deliberately says "received",
+           not "confirmed". Overpromising here means angry WhatsApp messages
+           when a payment turns out to have failed. */
+        <>
+          <p className="inline-flex items-center gap-2 rounded-full border border-brass/40 bg-brass/10 px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-brass">
+            <span className="h-1.5 w-1.5 rounded-full bg-brass" />
+            {t("confirm.upiPending")}
+          </p>
+          <h1 className="mt-4 font-display text-3xl text-cream">{t("confirm.upiTitle")}</h1>
+          <p className="mt-2 font-body text-sm text-ash">
+            {t("confirm.upiBody", { id: order.id.slice(0, 8) })}
+          </p>
+          {order.razorpayPaymentId && (
+            <p className="mt-3 font-mono text-xs text-ash/70">
+              {t("confirm.upiRef")}:{" "}
+              <span className="select-all text-cream">{order.razorpayPaymentId}</span>
+            </p>
+          )}
+        </>
       ) : isCodOrder(order) ? (
         <>
           <p className="inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-[11px] uppercase tracking-widest2 text-ember">
