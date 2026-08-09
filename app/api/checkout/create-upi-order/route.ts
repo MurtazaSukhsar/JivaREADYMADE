@@ -14,8 +14,8 @@ import { buildAppLinks, buildUpiQrDataUrl, getUpiConfig, makeTxnRef } from "@/li
 // plus the same link as a QR image. No third-party payment SDK, no API keys,
 // no merchant account — just the UPI ID from .env and an NPCI-standard link.
 //
-// Nothing is written to the Orders sheet here: the order waits in
-// data/pending-orders.json until the customer confirms (see confirm-upi).
+// The order is written to the Orders sheet immediately with status "created"
+// so it survives across serverless instances (see lib/pending-orders.ts).
 export async function POST(req: NextRequest) {
   if (!isTrustedOrigin(req)) {
     return NextResponse.json({ error: "Request rejected." }, { status: 403 });
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   // starts paying, not only once they come back to confirm.
   try {
     const now = new Date().toISOString();
-    savePendingOrder({
+    await savePendingOrder({
       id: localOrderId,
       items: orderItems,
       amount,

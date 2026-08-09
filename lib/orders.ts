@@ -188,6 +188,14 @@ export async function createOrder(input: {
   return order;
 }
 
+/**
+ * Overwrites an existing order's row. Used by the pending-order layer to
+ * update an order in place rather than appending a second row for it.
+ */
+export async function updateOrderRow(order: Order): Promise<void> {
+  await writeRow(order);
+}
+
 export async function getAllOrders(): Promise<Order[]> {
   const orders = await readAll();
   return orders.reverse(); // newest first

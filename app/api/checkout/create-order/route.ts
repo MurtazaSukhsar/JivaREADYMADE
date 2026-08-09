@@ -84,14 +84,14 @@ export async function POST(req: NextRequest) {
       items: orderItems,
       amount,
       currency: siteConfig.currency,
-      status: "created",
+      status: "created" as const,
       customer,
       razorpayOrderId: razorpayOrder.id,
       shipped: false,
       createdAt: now,
       updatedAt: now,
     };
-    savePendingOrder(order);
+    await savePendingOrder(order);
   } catch (err) {
     console.error("Could not write the pending order:", err);
     return NextResponse.json(

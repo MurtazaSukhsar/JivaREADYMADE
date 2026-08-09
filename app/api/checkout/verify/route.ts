@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, createOrder } from "@/lib/orders";
-import { getPendingOrder, removePendingOrder } from "@/lib/pending-orders";
+import { getOrderById, markOrderPaid } from "@/lib/orders";
 import { verifyPaymentSignature } from "@/lib/razorpay";
 import { verifyPaymentSchema } from "@/lib/validation";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { isTrustedOrigin } from "@/lib/origin-check";
 
+// Called by the browser the moment Razorpay reports a successful payment.
+//
+// The order already exists in the sheet with status "created" — it's written
+// when the cart is priced, so it survives the customer being served by a
+// different serverless instance. This route's job is to check the signature
+// and flip that existing row to "paid", never to create a second one.
 export async function POST(req: NextRequest) {
   if (!isTrustedOrigin(req)) {
     return NextResponse.json({ error: "Request rejected." }, { status: 403 });
@@ -25,36 +30,38 @@ export async function POST(req: NextRequest) {
 
   const { localOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
 
-  let order = await getOrderById(localOrderId);
+  const order = await getOrderById(localOrderId);
   if (!order) {
-    const pending = getPendingOrder(localOrderId);
-    if (!pending || pending.razorpayOrderId !== razorpay_order_id) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
-    }
-
-    const valid = verifyPaymentSignature({
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id,
-      signature: razorpay_signature,
-    });
-
-    if (!valid) {
-      return NextResponse.json({ error: "Payment could not be verified." }, { status: 400 });
-    }
-
-    order = await createOrder({
-      id: pending.id,
-      items: pending.items,
-      amount: pending.amount,
-      currency: pending.currency,
-      customer: pending.customer,
-      razorpayOrderId: razorpay_order_id,
-      status: "paid",
-      razorpayPaymentId: razorpay_payment_id,
-    });
-
-    removePendingOrder(localOrderId);
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, orderId: order.id });
+  // Already settled — the webhook usually beats the browser here. Say yes
+  // rather than re-verifying, so a slow redirect doesn't look like a failure.
+  if (order.status === "paid") {
+    return NextResponse.json({ ok: true, orderId: order.id });
+  }
+
+  // The Razorpay order id must be the one we recorded for THIS order, or a
+  // valid signature from some other payment could be replayed to mark this
+  // one paid.
+  if (order.razorpayOrderId !== razorpay_order_id) {
+    return NextResponse.json({ error: "Payment could not be verified." }, { status: 400 });
+  }
+
+  const valid = verifyPaymentSignature({
+    orderId: razorpay_order_id,
+    paymentId: razorpay_payment_id,
+    signature: razorpay_signature,
+  });
+
+  if (!valid) {
+    return NextResponse.json({ error: "Payment could not be verified." }, { status: 400 });
+  }
+
+  const paid = await markOrderPaid(razorpay_order_id, razorpay_payment_id);
+  if (!paid) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, orderId: paid.id });
 }

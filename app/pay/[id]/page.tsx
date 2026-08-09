@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getPendingOrder } from "@/lib/pending-orders";
 import { getOrderById } from "@/lib/orders";
-import { buildAppLinks, buildUpiQrDataUrl, getUpiConfig, makeAttemptId, makeTxnRef } from "@/lib/upi";
-import { savePendingOrder } from "@/lib/pending-orders";
+import { buildAppLinks, buildUpiQrDataUrl, getUpiConfig } from "@/lib/upi";
 import { siteConfig } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { getT } from "@/lib/i18n-server";
@@ -22,28 +21,25 @@ export const dynamic = "force-dynamic";
 export default async function PayPage({ params }: { params: { id: string } }) {
   const t = getT();
 
-  // Already placed? Then this page has done its job — send them on rather
-  // than inviting a second payment for the same order.
-  const placed = await getOrderById(params.id);
-  if (placed) redirect(`/order/${params.id}/confirmation`);
-
-  const pending = getPendingOrder(params.id);
-  if (!pending) notFound();
+  // getPendingOrder returns the order only while it's still unpaid, so an
+  // order that's already been confirmed falls through to the redirect below
+  // rather than inviting a second payment for the same thing.
+  const pending = await getPendingOrder(params.id);
+  if (!pending) {
+    const placed = await getOrderById(params.id);
+    if (placed) redirect(`/order/${params.id}/confirmation`);
+    notFound();
+  }
 
   const upiConfig = getUpiConfig();
   if (!upiConfig) notFound();
 
   const note = `${siteConfig.name} order ${pending.id.slice(0, 8)}`.replace(/[^A-Za-z0-9 ]/g, "");
 
-  // A fresh reference on every load of this page, so a customer who fails
-  // and reloads is making a genuinely new attempt rather than resending one
-  // the bank has already seen and may refuse. The JIVA<order> prefix is
-  // unchanged, so the order is still identifiable on a bank statement.
-  const txnRef = makeTxnRef(pending.id, makeAttemptId());
-
-  // Recorded against the pending order so the admin panel shows the exact
-  // reference that was last put in front of the customer.
-  savePendingOrder({ ...pending, razorpayOrderId: txnRef, updatedAt: new Date().toISOString() });
+  // The reference minted when the order was priced. Kept stable so the value
+  // on the customer's bank statement matches what the admin panel shows, and
+  // so this page stays a pure read — no sheet write on every reload.
+  const txnRef = pending.razorpayOrderId;
 
   const links = buildAppLinks({ amount: pending.amount, note, txnRef });
   const qrDataUrl = await buildUpiQrDataUrl(links.any);
