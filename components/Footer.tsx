@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
 
         {/* Top row */}
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-4">
 
           {/* Brand block */}
           <div className="sm:col-span-1">
@@ -38,6 +38,29 @@ export default function Footer() {
             </p>
             <ul className="flex flex-col gap-3">
               {siteConfig.footerLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="font-mono text-[11px] uppercase tracking-widest2 text-cream/80 transition-colors hover:text-ember"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-widest2 text-ash/50">
+              Legal
+            </p>
+            <ul className="flex flex-col gap-3">
+              {[
+                { label: "Privacy Policy", href: "/privacy-policy" },
+                { label: "Refund Policy", href: "/refund-policy" },
+                { label: "Cancellation Policy", href: "/cancellation-policy" },
+              ].map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -89,7 +112,7 @@ export default function Footer() {
           <p className="font-mono text-[11px] text-ash/50">
             © {new Date().getFullYear()} {siteConfig.legalName}. All rights reserved.
           </p>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-6">
             <Link
               href="/about"
               className="font-mono text-[10px] uppercase tracking-widest2 text-ash/50 transition-colors hover:text-cream"
@@ -101,6 +124,24 @@ export default function Footer() {
               className="font-mono text-[10px] uppercase tracking-widest2 text-ash/50 transition-colors hover:text-cream"
             >
               Contact Us
+            </Link>
+            <Link
+              href="/privacy-policy"
+              className="font-mono text-[10px] uppercase tracking-widest2 text-ash/50 transition-colors hover:text-cream"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/refund-policy"
+              className="font-mono text-[10px] uppercase tracking-widest2 text-ash/50 transition-colors hover:text-cream"
+            >
+              Refund Policy
+            </Link>
+            <Link
+              href="/cancellation-policy"
+              className="font-mono text-[10px] uppercase tracking-widest2 text-ash/50 transition-colors hover:text-cream"
+            >
+              Cancellation Policy
             </Link>
           </div>
         </div>
