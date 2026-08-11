@@ -9,14 +9,35 @@ import { siteConfig } from "@/lib/config";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { type TranslationKey } from "@/lib/i18n";
 
+// The Cashfree v3 SDK exposes a single global factory. Calling it returns a
+// checkout instance bound to one environment — the mode must match the one
+// the payment session was created in on the server, so it's sent back with
+// the session rather than hardcoded here.
+type CashfreeCheckoutResult = {
+  error?: { message?: string };
+  redirect?: boolean;
+  paymentDetails?: { paymentMessage?: string };
+};
+
+type CashfreeInstance = {
+  checkout: (options: {
+    paymentSessionId: string;
+    redirectTarget?: string;
+  }) => Promise<CashfreeCheckoutResult>;
+};
+
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void;
-      on: (event: string, handler: (response: unknown) => void) => void;
-    };
+    Cashfree?: (config: { mode: "sandbox" | "production" }) => CashfreeInstance;
   }
 }
+
+// What the server hands back from either create-order route.
+type CashfreeSession = {
+  localOrderId: string;
+  paymentSessionId: string;
+  mode: "sandbox" | "production";
+};
 
 type Customer = {
   name: string;
@@ -65,11 +86,117 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, TranslationKey>>>({});
-  const [paymentMethod, setPaymentMethod] = useState<"upi" | "cod">("upi");
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "upi" | "cod">("online");
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setCustomer((c) => ({ ...c, [key]: e.target.value }));
     setFieldErrors((f) => ({ ...f, [key]: undefined }));
+  };
+
+  // Both create-order routes take the same body: slugs and quantities only,
+  // never prices. The server looks every price up in the catalog.
+  const orderPayload = () => ({
+    items: items.map((i) => ({
+      slug: i.slug,
+      quantity: i.quantity,
+      size: i.size,
+      color: i.color,
+    })),
+    customer: {
+      name: customer.name.trim(),
+      phone: customer.phone.trim(),
+      email: customer.email.trim(),
+      address: customer.address.trim(),
+      city: customer.city.trim(),
+      state: customer.state.trim(),
+      pincode: customer.pincode.trim(),
+      language,
+    },
+  });
+
+  /**
+   * Opens the Cashfree modal, then asks OUR server what happened.
+   *
+   * The SDK resolves with its own success/error object, and it's tempting to
+   * branch on that — but it runs in the customer's browser, so it proves
+   * nothing. We throw it away and hit /verify-cashfree, which checks with
+   * Cashfree server-to-server. That also means a payment that succeeded while
+   * the modal reported a hiccup still lands correctly.
+   *
+   * Shared by the full-payment and COD-advance flows; they differ only in
+   * which route minted the session.
+   */
+  const runCashfreeCheckout = async (session: CashfreeSession) => {
+    if (!scriptReady || !window.Cashfree) {
+      setError(t("err.scriptNotReady"));
+      setStatus("idle");
+      return;
+    }
+
+    setStatus("paying");
+
+    const cashfree = window.Cashfree({ mode: session.mode });
+    await cashfree.checkout({
+      paymentSessionId: session.paymentSessionId,
+      // Keeps the customer on our page instead of bouncing them to a hosted
+      // checkout and back.
+      redirectTarget: "_modal",
+    });
+
+    setStatus("verifying");
+
+    const verifyRes = await fetch("/api/checkout/verify-cashfree", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ localOrderId: session.localOrderId }),
+    });
+    const verified = await verifyRes.json();
+
+    if (!verifyRes.ok) {
+      setError(verified.error ?? t("err.notVerified"));
+      setStatus("idle");
+      return;
+    }
+
+    // Cleared only once the payment is confirmed — if they'd abandoned the
+    // modal instead, everything they picked is still in the cart.
+    clear();
+    router.push(`/order/${verified.orderId}/confirmation`);
+  };
+
+  // Paying the full amount online: card, UPI, netbanking or wallet, all
+  // through Cashfree's modal.
+  const handleOnline = async () => {
+    setError(null);
+
+    const errors = validate(customer);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(t("err.checkFields"));
+      return;
+    }
+
+    setStatus("creating");
+
+    try {
+      const createRes = await fetch("/api/checkout/create-cashfree-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload()),
+      });
+      const created = await createRes.json();
+
+      if (!createRes.ok) {
+        setError(created.error ?? t("err.couldNotStart"));
+        setStatus("idle");
+        return;
+      }
+
+      await runCashfreeCheckout(created as CashfreeSession);
+    } catch {
+      setError(t("err.unconfirmed"));
+      setStatus("idle");
+    }
   };
 
   // Paying by UPI: the server prices the cart, records a pending order and
@@ -94,24 +221,7 @@ export default function CheckoutPage() {
       const createRes = await fetch("/api/checkout/create-upi-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((i) => ({
-            slug: i.slug,
-            quantity: i.quantity,
-            size: i.size,
-            color: i.color,
-          })),
-          customer: {
-            name: customer.name.trim(),
-            phone: customer.phone.trim(),
-            email: customer.email.trim(),
-            address: customer.address.trim(),
-            city: customer.city.trim(),
-            state: customer.state.trim(),
-            pincode: customer.pincode.trim(),
-            language,
-          },
-        }),
+        body: JSON.stringify(orderPayload()),
       });
       const created = await createRes.json();
 
@@ -129,6 +239,9 @@ export default function CheckoutPage() {
     }
   };
 
+  // Cash on Delivery still takes a small advance online — same Cashfree
+  // modal, smaller amount. The server decides how much and marks the order
+  // "cod_pending" rather than "paid", because the balance is owed at the door.
   const handleCOD = async () => {
     setError(null);
     const errors = validate(customer);
@@ -143,24 +256,7 @@ export default function CheckoutPage() {
       const createRes = await fetch("/api/checkout/create-cod-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((i) => ({
-            slug: i.slug,
-            quantity: i.quantity,
-            size: i.size,
-            color: i.color,
-          })),
-          customer: {
-            name: customer.name.trim(),
-            phone: customer.phone.trim(),
-            email: customer.email.trim(),
-            address: customer.address.trim(),
-            city: customer.city.trim(),
-            state: customer.state.trim(),
-            pincode: customer.pincode.trim(),
-            language,
-          },
-        }),
+        body: JSON.stringify(orderPayload()),
       });
       const created = await createRes.json();
 
@@ -170,68 +266,9 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (!scriptReady || !window.Razorpay) {
-        setError(t("err.scriptNotReady"));
-        setStatus("idle");
-        return;
-      }
-
-      setStatus("paying");
-
-      const rzp = new window.Razorpay({
-        key: created.keyId,
-        amount: created.amountInSubunits,
-        currency: created.currency,
-        order_id: created.razorpayOrderId,
-        name: siteConfig.name,
-        description: `COD Advance - ${siteConfig.name}`,
-        prefill: created.prefill,
-        theme: { color: "#D97B5D", backdrop_color: "#181B21" },
-        modal: {
-          ondismiss: () => {
-            setStatus("idle");
-          },
-        },
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          setStatus("verifying");
-          try {
-            const verifyRes = await fetch("/api/checkout/verify-cod", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                localOrderId: created.localOrderId,
-                ...response,
-              }),
-            });
-            const verified = await verifyRes.json();
-
-            if (!verifyRes.ok) {
-              setError(verified.error ?? t("err.notVerified"));
-              setStatus("idle");
-              return;
-            }
-
-            clear();
-            router.push(`/order/${verified.orderId}/confirmation`);
-          } catch {
-            setError(t("err.unconfirmed"));
-            setStatus("idle");
-          }
-        },
-      });
-
-      rzp.on("payment.failed", () => {
-        setError(t("err.paymentFailed"));
-        setStatus("idle");
-      });
-
-      rzp.open();
+      await runCashfreeCheckout(created as CashfreeSession);
     } catch {
-      setError(t("err.server"));
+      setError(t("err.unconfirmed"));
       setStatus("idle");
     }
   };
@@ -248,7 +285,7 @@ export default function CheckoutPage() {
   return (
     <section className="mx-auto max-w-4xl px-5 py-14 sm:px-8">
       <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
+        src="https://sdk.cashfree.com/js/v3/cashfree.js"
         onReady={() => setScriptReady(true)}
         onLoad={() => setScriptReady(true)}
       />
@@ -373,6 +410,27 @@ export default function CheckoutPage() {
               {t("checkout.paymentMethod")}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
+              {/* Full amount online through Cashfree — cards, UPI, netbanking,
+                  wallets. Listed first because it's the only option that
+                  confirms itself: no QR to scan, no reference to type, no
+                  human checking a bank statement afterwards. */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("online")}
+                className={`rounded-sm border p-4 text-left transition-all duration-200 sm:col-span-2 ${
+                  paymentMethod === "online"
+                    ? "border-ember bg-ember/10"
+                    : "border-line/60 bg-slate/20 hover:border-ash/50"
+                }`}
+              >
+                <span className="block font-display text-sm font-semibold text-cream">
+                  {t("checkout.method.online")}
+                </span>
+                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
+                  {t("checkout.method.onlineSub")}
+                </span>
+              </button>
+
               {/* Pay by UPI QR — GPay, PhonePe, Paytm, any UPI app */}
               <button
                 type="button"
@@ -443,7 +501,20 @@ export default function CheckoutPage() {
           )}
 
           <div className="mt-6">
-            {paymentMethod === "upi" ? (
+            {paymentMethod === "online" ? (
+              <button
+                type="button"
+                onClick={handleOnline}
+                disabled={status !== "idle"}
+                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+              >
+                {status === "idle" && t("checkout.payOnline")}
+                {status === "creating" && t("checkout.preparing")}
+                {status === "creating_cod" && t("checkout.openingPayment")}
+                {status === "paying" && t("checkout.waiting")}
+                {status === "verifying" && t("checkout.confirming")}
+              </button>
+            ) : paymentMethod === "upi" ? (
               <button
                 type="button"
                 onClick={handleUpi}

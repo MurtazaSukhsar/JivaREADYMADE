@@ -1,15 +1,33 @@
 /** @type {import('next').NextConfig} */
 
+// Every host the payment SDK touches has to be named here or the browser
+// silently blocks it and checkout dies with a console error most customers
+// will never report. Cashfree loads its script from sdk.cashfree.com, talks
+// to api/sandbox.cashfree.com, and renders the checkout modal in an iframe
+// from payments.cashfree.com — hence the same domains repeated across
+// script-src, connect-src and frame-src.
+const cashfree = [
+  "https://sdk.cashfree.com",
+  "https://api.cashfree.com",
+  "https://sandbox.cashfree.com",
+  "https://payments.cashfree.com",
+  "https://payments-test.cashfree.com",
+].join(" ");
+
 const csp = [
   "default-src 'self'",
   // Next.js needs 'unsafe-inline' for a couple of small inline bootstrap
-  // scripts; Razorpay's own checkout.js is explicitly allow-listed.
-  `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ""}`,
+  // scripts; the payment SDKs are explicitly allow-listed.
+  `script-src 'self' 'unsafe-inline' ${cashfree} https://checkout.razorpay.com${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' https://picsum.photos https://drive.google.com https://lh3.googleusercontent.com https://res.cloudinary.com data:",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com",
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+  `connect-src 'self' ${cashfree} https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com`,
+  // Banks and card issuers redirect into their own 3-D Secure pages inside
+  // the modal, and there is no way to know every one of their domains in
+  // advance — so this stays open rather than breaking a payment method the
+  // day a bank changes hosts.
+  `frame-src 'self' ${cashfree} https: https://api.razorpay.com https://checkout.razorpay.com`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

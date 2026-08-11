@@ -3,7 +3,7 @@
 A storefront where the product catalog lives in a Google Sheet (edit the
 sheet, the site updates — or use the admin form, either writes the same
 place), with admin auth, input validation, security headers, and a
-Razorpay checkout wired up so payments can't be tampered with.
+Cashfree checkout wired up so payments can't be tampered with.
 
 ## Setup
 
@@ -14,7 +14,7 @@ cp .env.example .env.local
 
 Fill in `.env.local` — see below for the Google Sheets values, and the
 previous section of this file (or `.env.example`) for `SESSION_SECRET`,
-`ADMIN_PASSWORD_HASH`, and the Razorpay keys.
+`ADMIN_PASSWORD_HASH`, and the Cashfree keys.
 
 ```bash
 npm run dev
@@ -110,19 +110,22 @@ The part that matters most for "can this be hacked or bypassed":
    real price from the Products sheet for every line item and computes the
    total itself. Editing the request in dev tools to change quantity
    doesn't change what the server charges.
-2. **A Razorpay order is created for that server-computed amount**, and
-   only the resulting `order_id` (not a price) is handed to the browser to
-   open the Razorpay Checkout widget with.
-3. **No order is marked paid without a verified signature.**
-   `/api/checkout/verify` recomputes the HMAC signature from your
-   `RAZORPAY_KEY_SECRET` and compares it to what Razorpay returned.
-   Posting a fake "success" straight to that endpoint without a valid
-   signature does nothing.
-4. **The webhook (`/api/webhooks/razorpay`) is the real source of truth.**
-   It verifies Razorpay's own signature header on the raw request body and
-   marks the order paid independently of whatever the customer's browser
-   did. If their tab closes right after paying, the order still gets
-   marked paid.
+2. **A Cashfree order is created for that server-computed amount**, and
+   only the resulting single-use `payment_session_id` (not a price, not a
+   key) is handed to the browser to open the Cashfree modal with.
+3. **No order is marked paid on the browser's say-so.** The Cashfree SDK
+   resolves with its own success object, and `/api/checkout/verify-cashfree`
+   throws it away: the only thing it accepts from the client is our order
+   id, then it asks Cashfree server-to-server whether that order is `PAID`.
+   Posting a fake "success" to that endpoint does nothing.
+4. **The webhook (`/api/webhooks/cashfree`) is the real source of truth.**
+   It verifies Cashfree's `x-webhook-signature` — base64 HMAC-SHA256 over
+   `timestamp + raw body`, signed with `CASHFREE_SECRET_KEY` — and marks
+   the order paid independently of whatever the customer's browser did. If
+   their tab closes right after paying, the order still gets marked paid.
+   A COD advance is tagged at creation time (`order_tags.kind`) and read
+   back from Cashfree, so paying the ₹100 advance can never mark an order
+   fully paid.
 5. Both the verify route and the webhook call the same idempotent
    `markOrderPaid` — whichever arrives first "wins," the second is a
    harmless no-op. No double-fulfillment from retries or races.
@@ -147,8 +150,8 @@ The part that matters most for "can this be hacked or bypassed":
   It's in-memory, so it only works for a single server instance — see the
   limitations below.
 - **Security headers** (`next.config.mjs`): a Content-Security-Policy
-  scoped to your own domain plus Razorpay's checkout domains and Google
-  Drive's image hosts, plus `X-Frame-Options`, `X-Content-Type-Options`,
+  scoped to your own domain plus Cashfree's SDK/API/checkout domains and
+  Google Drive's image hosts, plus `X-Frame-Options`, `X-Content-Type-Options`,
   `Referrer-Policy`, and HSTS.
 - **Origin checks** on state-changing POST requests as defense-in-depth
   alongside `sameSite` cookies.
@@ -177,9 +180,13 @@ The part that matters most for "can this be hacked or bypassed":
   the first thing to upgrade.
 - **No inventory/stock tracking.** Nothing currently stops overselling a
   limited quantity.
-- Razorpay is India-first; confirm with them that your business's region
+- Cashfree is India-first; confirm with them that your business's region
   and the currency in `lib/config.ts` (`siteConfig.currency`) are
   supported on your account before going live.
+- **`CASHFREE_ENV` defaults to `sandbox`.** Nothing charges a real card
+  until you set it to `production` *and* swap in your live API keys — a
+  live key with `sandbox` (or the reverse) fails authentication on every
+  payment, so check both together when going live.
 
 ## Project structure
 
@@ -189,7 +196,7 @@ app/
   shop/page.tsx                  → full catalog, no filters
   product/[slug]/page.tsx        → auto-generated product page
   cart/page.tsx                  → cart (localStorage-backed)
-  checkout/page.tsx              → Razorpay Checkout flow
+  checkout/page.tsx              → Cashfree Checkout flow (+ UPI QR, COD)
   order/[id]/confirmation/       → post-payment confirmation
   admin/page.tsx                 → add-product form (requires login)
   admin/orders/page.tsx          → order list: customer details, ship + WhatsApp
@@ -198,9 +205,11 @@ app/
   api/orders/route.ts            → GET order list (admin-only)
   api/orders/[id]/ship/          → POST shipped toggle (admin-only)
   api/auth/login|logout/         → session cookie issue/clear
-  api/checkout/create-order/     → server-priced Razorpay order creation
-  api/checkout/verify/           → signature-verified payment confirmation
-  api/webhooks/razorpay/         → webhook, source of truth for payment status
+  api/checkout/create-cashfree-order/ → server-priced Cashfree order (full amount)
+  api/checkout/create-cod-order/ → server-priced Cashfree order (COD advance)
+  api/checkout/verify-cashfree/  → asks Cashfree directly whether it was paid
+  api/webhooks/cashfree/         → webhook, source of truth for payment status
+  api/checkout/create-order|verify|webhooks/razorpay → legacy Razorpay, unused
 lib/
   i18n.ts                        → en/hi/gu dictionary + t() helper
   i18n-server.ts                 → reads the lang cookie in server components
@@ -209,7 +218,8 @@ lib/
   whatsapp.ts                    → pre-typed shipping message + wa.me link
   google-sheets.ts               → Sheets API auth + read/append/update helpers
   session.ts                     → signed session cookie helpers
-  razorpay.ts                    → Razorpay client + signature verification
+  cashfree.ts                    → Cashfree REST client + webhook verification
+  razorpay.ts                    → legacy Razorpay client (no longer called)
   validation.ts                  → zod schemas for every API route
   rate-limit.ts, origin-check.ts → basic abuse protection
   config.ts                      → brand name, tagline, currency

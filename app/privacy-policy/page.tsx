@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
             {[
               { label: "Contact Info", value: "Name, email address, phone number" },
               { label: "Shipping Info", value: "Delivery address, city, state, PIN code" },
-              { label: "Payment Info", value: "We do not store card or UPI details — payments are processed by secure third-party gateways (Razorpay / UPI)" },
+              { label: "Payment Info", value: "We do not store card or UPI details — payments are processed by secure third-party gateways (Cashfree / UPI)" },
               { label: "Order Info", value: "Items purchased, quantities, order value, order status" },
               { label: "Technical Info", value: "IP address, browser type, pages visited (via cookies/analytics)" },
             ].map(({ label, value }) => (
@@ -96,7 +96,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <ul className="mt-4 flex flex-col gap-2 pl-4">
             {[
-              "Payment gateways (Razorpay, UPI) — for transaction processing",
+              "Payment gateways (Cashfree, UPI) — for transaction processing",
               "Courier and logistics partners — for order delivery",
               "Cloud infrastructure providers — for hosting and data storage",
             ].map((item) => (

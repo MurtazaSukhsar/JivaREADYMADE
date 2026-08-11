@@ -89,6 +89,17 @@ export const markPaidSchema = z.object({
   paid: z.boolean(),
 });
 
+// Everything the browser sends after the Cashfree modal closes.
+//
+// Deliberately just the order id: no payment id, no signature, no amount, not
+// even whether it was a full payment or a COD advance. All of that is read
+// back from Cashfree server-to-server, so there is nothing here worth
+// forging — the worst a tampered request can do is ask about someone else's
+// order id, which returns only ok/not-ok.
+export const verifyCashfreeSchema = z.object({
+  localOrderId: z.string().trim().min(1).max(64),
+});
+
 export const verifyPaymentSchema = z.object({
   localOrderId: z.string().trim().min(1),
   razorpay_order_id: z.string().trim().min(1),
