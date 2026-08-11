@@ -10,12 +10,12 @@ export function formatPrice(price: number, currency: string = "AED"): string {
 
 export function getDeliveryFee(totalQuantity: number): number {
   if (totalQuantity <= 0) return 0;
-  return 50 + 30 * (totalQuantity - 1);
+  return 70 + 40 * (totalQuantity - 1);
 }
 
 export function getCodAdvance(totalQuantity: number): number {
   if (totalQuantity <= 0) return 0;
-  return 100 + 50 * (totalQuantity - 1);
+  return 50 + 50 * (totalQuantity - 1);
 }
 
 export function isCodOrder(order: Order): boolean {

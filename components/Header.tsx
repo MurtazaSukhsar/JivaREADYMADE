@@ -58,10 +58,39 @@ export default function Header() {
           <LanguageSwitcher />
         </nav>
 
+        {/* On a narrow screen the brand name alone can crowd right up against
+            whatever sits next to it, so Bag moves into the dropdown below
+            instead of competing for space on this line — just the hamburger
+            stays here, with its own badge dot so an active cart is still
+            visible without opening the menu. */}
         <div className="flex items-center gap-4 sm:hidden">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={t("nav.toggleMenu")}
+            className="relative flex flex-col gap-1.5 p-1"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {totalCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ember" />
+            )}
+            <span
+              className={`h-px w-6 bg-cream transition-transform ${open ? "translate-y-[7px] rotate-45" : ""}`}
+            />
+            <span className={`h-px w-6 bg-cream transition-opacity ${open ? "opacity-0" : ""}`} />
+            <span
+              className={`h-px w-6 bg-cream transition-transform ${open ? "-translate-y-[7px] -rotate-45" : ""}`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <nav className="flex flex-col border-t border-line/70 bg-carbon px-5 py-3 sm:hidden">
           <Link
             href="/cart"
-            className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest2 text-cream"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 py-2 font-mono text-xs uppercase tracking-widest2 text-cream transition-colors hover:text-ember"
           >
             {t("nav.bag")}
             {totalCount > 0 && (
@@ -70,25 +99,6 @@ export default function Header() {
               </span>
             )}
           </Link>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-label={t("nav.toggleMenu")}
-            className="flex flex-col gap-1.5"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span
-              className={`h-px w-6 bg-cream transition-transform ${open ? "translate-y-[3px] rotate-45" : ""}`}
-            />
-            <span
-              className={`h-px w-6 bg-cream transition-transform ${open ? "-translate-y-[3px] -rotate-45" : ""}`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <nav className="flex flex-col border-t border-line/70 bg-carbon px-5 py-3 sm:hidden">
           {siteConfig.nav.map((item) => (
             <Link
               key={item.href}

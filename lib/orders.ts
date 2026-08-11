@@ -20,6 +20,8 @@ import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 //   H  City              P  Shipped At
 //                        Q  Items JSON
 //                        R  Language
+//                        S  State
+//                        T  Tracking Number
 //
 // Column J is a human-readable summary for whoever is packing the parcel;
 // column Q is the same items as JSON so the app can rebuild them losslessly.
@@ -32,9 +34,9 @@ import { appendSheetRow, readSheetRows, updateSheetRow } from "./google-sheets";
 // server-side by Sheets and don't race.
 
 const SHEET_TAB = "Orders";
-const RANGE_READ = `${SHEET_TAB}!A2:S`;
-const RANGE_APPEND = `${SHEET_TAB}!A:S`;
-const COLUMN_COUNT = 19; // A..S
+const RANGE_READ = `${SHEET_TAB}!A2:T`;
+const RANGE_APPEND = `${SHEET_TAB}!A:T`;
+const COLUMN_COUNT = 20; // A..T
 
 function getSheetId(): string {
   const id = process.env.GOOGLE_SHEET_ID;
@@ -72,6 +74,7 @@ function toRow(order: Order): (string | number)[] {
     JSON.stringify(order.items),
     order.customer.language,
     order.customer.state,
+    order.trackingNumber ?? "",
   ];
 }
 
@@ -131,6 +134,7 @@ function parseRow(row: string[], rowNumber: number): Order | null {
     razorpayPaymentId: cell(row, 13) || undefined,
     shipped: shippedRaw === "yes" || shippedRaw === "true",
     shippedAt: cell(row, 15) || undefined,
+    trackingNumber: cell(row, 19) || undefined,
     rowNumber,
   };
 }
@@ -151,7 +155,7 @@ async function writeRow(order: Order): Promise<void> {
   }
   await updateSheetRow(
     getSheetId(),
-    `${SHEET_TAB}!A${order.rowNumber}:S${order.rowNumber}`,
+    `${SHEET_TAB}!A${order.rowNumber}:T${order.rowNumber}`,
     toRow(order)
   );
 }
@@ -293,6 +297,25 @@ export async function setOrderShipped(
 
   order.shipped = shipped;
   order.shippedAt = shipped ? new Date().toISOString() : undefined;
+  order.updatedAt = new Date().toISOString();
+  await writeRow(order);
+  return order;
+}
+
+/**
+ * Saves the courier's tracking/AWB number. Separate from setOrderShipped so
+ * it can be entered before, at, or after the shipped toggle — whichever
+ * matches how the shop owner actually gets the number from the courier.
+ * An empty string clears it.
+ */
+export async function setOrderTrackingNumber(
+  orderId: string,
+  trackingNumber: string
+): Promise<Order | null> {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+
+  order.trackingNumber = trackingNumber || undefined;
   order.updatedAt = new Date().toISOString();
   await writeRow(order);
   return order;

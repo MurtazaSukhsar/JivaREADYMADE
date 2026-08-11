@@ -312,7 +312,7 @@ export default function ManageProductsPage() {
                         <button
                           onClick={() => confirmDelete(p)}
                           disabled={isBusy}
-                          className="rounded-sm bg-ember px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest2 text-carbon transition-all hover:brightness-110 disabled:opacity-40"
+                          className="rounded-sm bg-ember px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest2 text-cream transition-all hover:brightness-110 disabled:opacity-40"
                         >
                           Yes, delete
                         </button>
@@ -340,7 +340,7 @@ export default function ManageProductsPage() {
                   <div className="border-t border-line/60 p-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="block">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                           Name
                         </span>
                         <input
@@ -350,7 +350,7 @@ export default function ManageProductsPage() {
                         />
                       </label>
                       <label className="block">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                           Price ({siteConfig.currency})
                         </span>
                         <input
@@ -361,7 +361,7 @@ export default function ManageProductsPage() {
                         />
                       </label>
                       <label className="block">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                           Sizes (comma separated)
                         </span>
                         <input
@@ -371,10 +371,10 @@ export default function ManageProductsPage() {
                         />
                       </label>
                       <div className="sm:col-span-2 border-t border-line/40 pt-4 mt-2">
-                        <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 block mb-1">
+                        <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash block mb-1">
                           Color-Specific Options & Images (Optional)
                         </span>
-                        <p className="font-body text-xs text-ash/60 mb-3">
+                        <p className="font-body text-xs text-ash mb-3">
                           Add colors and upload/paste their corresponding images so the customer sees the correct image when selecting that color.
                         </p>
 
@@ -384,7 +384,7 @@ export default function ManageProductsPage() {
                               <div className="flex flex-col sm:flex-row gap-3">
                                 {/* Color Name Input */}
                                 <div className="flex-1">
-                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash block mb-1">
                                     Colour Name
                                   </span>
                                   <input
@@ -402,7 +402,7 @@ export default function ManageProductsPage() {
 
                                 {/* Image Upload/URL for this color */}
                                 <div>
-                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash block mb-1">
                                     Colour Image
                                   </span>
                                   
@@ -416,7 +416,7 @@ export default function ManageProductsPage() {
                                           className="h-full w-full object-cover"
                                         />
                                       ) : (
-                                        <div className="flex h-full w-full items-center justify-center text-[10px] font-mono text-ash/40">
+                                        <div className="flex h-full w-full items-center justify-center text-[10px] font-mono text-ash">
                                           No Img
                                         </div>
                                       )}
@@ -510,7 +510,7 @@ export default function ManageProductsPage() {
                         </button>
                       </div>
                       <label className="block sm:col-span-2">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                           Description
                         </span>
                         <textarea
@@ -523,7 +523,7 @@ export default function ManageProductsPage() {
                         />
                       </label>
                       <label className="block sm:col-span-2">
-                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+                        <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                           Images (Upload or URLs)
                         </span>
                         <div className="mb-2 mt-1">
@@ -586,7 +586,7 @@ export default function ManageProductsPage() {
                       <button
                         onClick={() => saveEdit(p)}
                         disabled={isBusy}
-                        className="rounded-sm bg-ember px-5 py-2 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all hover:shadow-glow hover:brightness-110 disabled:opacity-50"
+                        className="rounded-sm bg-ember px-5 py-2 font-mono text-xs uppercase tracking-widest2 text-cream transition-all hover:shadow-glow hover:brightness-110 disabled:opacity-50"
                       >
                         {isBusy ? "Saving…" : "Save changes"}
                       </button>

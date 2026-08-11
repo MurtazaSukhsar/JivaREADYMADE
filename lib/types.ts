@@ -68,6 +68,9 @@ export type Order = {
   razorpayPaymentId?: string;
   shipped: boolean;
   shippedAt?: string;
+  // Courier's tracking/AWB number, entered by hand once the parcel is
+  // handed over. Included in the "shipped" WhatsApp message when present.
+  trackingNumber?: string;
   createdAt: string;
   updatedAt: string;
   // Which row of the Orders sheet this came from. Internal bookkeeping so an

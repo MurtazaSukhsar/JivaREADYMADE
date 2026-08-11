@@ -54,6 +54,7 @@ const TEMPLATES: Record<
     greeting: (name: string) => string;
     headline: (brandName: string, id: string) => string;
     total: (amount: string) => string;
+    trackingLine: (num: string) => string;
     deliveringTo: (address: string) => string;
     signoff: (brandName: string) => string;
   }
@@ -63,6 +64,7 @@ const TEMPLATES: Record<
     headline: (b, id) =>
       `Good news — your ${b} order #${id} has been handed to the courier and is on its way.`,
     total: (amount) => `Total paid: ${amount}`,
+    trackingLine: (num) => `Tracking number: ${num}`,
     deliveringTo: (address) => `Delivering to: ${address}`,
     signoff: (b) => `Reply here if anything looks off. Thanks for shopping with ${b}.`,
   },
@@ -71,6 +73,7 @@ const TEMPLATES: Record<
     headline: (b, id) =>
       `खुशखबरी — आपका ${b} ऑर्डर #${id} कूरियर को सौंप दिया गया है और रास्ते में है।`,
     total: (amount) => `कुल भुगतान: ${amount}`,
+    trackingLine: (num) => `ट्रैकिंग नंबर: ${num}`,
     deliveringTo: (address) => `डिलीवरी यहाँ होगी: ${address}`,
     signoff: (b) => `कुछ भी गड़बड़ लगे तो यहीं जवाब दें। ${b} से खरीदारी के लिए धन्यवाद।`,
   },
@@ -79,6 +82,7 @@ const TEMPLATES: Record<
     headline: (b, id) =>
       `સારા સમાચાર — તમારો ${b} ઓર્ડર #${id} કુરિયરને સોંપી દેવાયો છે અને રસ્તામાં છે.`,
     total: (amount) => `કુલ ચુકવણી: ${amount}`,
+    trackingLine: (num) => `ટ્રેકિંગ નંબર: ${num}`,
     deliveringTo: (address) => `ડિલિવરી અહીં થશે: ${address}`,
     signoff: (b) => `કંઈ પણ ખોટું લાગે તો અહીં જ જવાબ આપો. ${b} પરથી ખરીદી બદલ આભાર.`,
   },
@@ -111,9 +115,10 @@ const LABELS: Record<Language, Record<string, string>> = {
   },
 };
 
-export function shippedMessage(order: Order): string {
-  const tpl = TEMPLATES[order.customer.language] ?? TEMPLATES.en;
-  const b = brand();
+// Shared by both message templates below: the itemised price breakdown, with
+// the same COD-vs-prepaid branch either message needs (COD has shipped with
+// only the advance in, prepaid has the full amount in).
+function orderBreakdown(order: Order): string {
   const lang = order.customer.language || "en";
   const lbl = LABELS[lang] ?? LABELS.en;
   const currency = order.currency || siteConfig.currency;
@@ -123,30 +128,36 @@ export function shippedMessage(order: Order): string {
   const deliveryFee = getDeliveryFee(totalQty);
   const advanceAmount = getCodAdvance(totalQty);
 
-  let breakdown = "";
   if (isCodOrder(order)) {
-    breakdown = [
+    return [
       `${lbl.price} : ${formatPrice(subtotal, currency)}`,
       `${lbl.courier} : ${formatPrice(deliveryFee, currency)}`,
       `${lbl.total} : ${formatPrice(subtotal + deliveryFee, currency)}`,
       `${lbl.advance}  : ${formatPrice(advanceAmount, currency)}`,
       `${lbl.due} : ${formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), currency)}`,
     ].join("\n");
-  } else {
-    const courierPaid = Math.max(0, order.amount - subtotal);
-    breakdown = [
-      `${lbl.price} : ${formatPrice(subtotal, currency)}`,
-      ...(courierPaid > 0 ? [`${lbl.courier} : ${formatPrice(courierPaid, currency)}`] : []),
-      `${lbl.totalPaid} : ${formatPrice(order.amount, currency)}`,
-    ].join("\n");
   }
 
-  // Product names, sizes and colours come straight from the sheet and are
-  // never translated — they're what's printed on the label.
-  const lines = order.items.map((i) => {
+  const courierPaid = Math.max(0, order.amount - subtotal);
+  return [
+    `${lbl.price} : ${formatPrice(subtotal, currency)}`,
+    ...(courierPaid > 0 ? [`${lbl.courier} : ${formatPrice(courierPaid, currency)}`] : []),
+    `${lbl.totalPaid} : ${formatPrice(order.amount, currency)}`,
+  ].join("\n");
+}
+
+// Product names, sizes and colours come straight from the sheet and are
+// never translated — they're what's printed on the label.
+function orderLines(order: Order): string[] {
+  return order.items.map((i) => {
     const variant = [i.size, i.color].filter(Boolean).join(" / ");
     return `- ${i.name} x${i.quantity}${variant ? ` (${variant})` : ""}`;
   });
+}
+
+export function shippedMessage(order: Order): string {
+  const tpl = TEMPLATES[order.customer.language] ?? TEMPLATES.en;
+  const b = brand();
 
   const address = [order.customer.address, order.customer.city, order.customer.pincode]
     .filter(Boolean)
@@ -157,11 +168,76 @@ export function shippedMessage(order: Order): string {
     ``,
     tpl.headline(b, order.id.slice(0, 8)),
     ``,
-    ...lines,
+    // Omitted entirely rather than shown blank when no tracking number has
+    // been entered yet — a "Tracking number: " line with nothing after it
+    // reads as broken, not as "not available yet".
+    ...(order.trackingNumber ? [tpl.trackingLine(order.trackingNumber), ``] : []),
+    ...orderLines(order),
     ``,
-    breakdown,
+    orderBreakdown(order),
     ``,
     ...(address ? [tpl.deliveringTo(address)] : []),
+    ``,
+    tpl.signoff(b),
+  ].join("\n");
+}
+
+// The pre-typed "we've received your payment" message — for a COD order this
+// fires once the advance clears, not the full amount, so the wording is
+// explicit about that rather than implying the whole order is paid for.
+const PAYMENT_TEMPLATES: Record<
+  Language,
+  {
+    greeting: (name: string) => string;
+    headlinePrepaid: (brandName: string, id: string) => string;
+    headlineCod: (brandName: string, id: string) => string;
+    trackingNote: string;
+    signoff: (brandName: string) => string;
+  }
+> = {
+  en: {
+    greeting: (name) => `Hi ${name},`,
+    headlinePrepaid: (b, id) => `Good news — we've received your payment for ${b} order #${id}.`,
+    headlineCod: (b, id) =>
+      `Good news — we've received your advance payment for ${b} order #${id}. The rest is payable on delivery.`,
+    trackingNote: `Your tracking number will be shared here as soon as it ships.`,
+    signoff: (b) => `Thanks for shopping with ${b}.`,
+  },
+  hi: {
+    greeting: (name) => `नमस्ते ${name},`,
+    headlinePrepaid: (b, id) => `खुशखबरी — आपके ${b} ऑर्डर #${id} का भुगतान मिल गया है।`,
+    headlineCod: (b, id) =>
+      `खुशखबरी — आपके ${b} ऑर्डर #${id} का अग्रिम भुगतान मिल गया है। बाकी राशि डिलीवरी पर देय होगी।`,
+    trackingNote: `शिप होते ही ट्रैकिंग नंबर यहीं भेज दिया जाएगा।`,
+    signoff: (b) => `${b} से खरीदारी के लिए धन्यवाद।`,
+  },
+  gu: {
+    greeting: (name) => `નમસ્તે ${name},`,
+    headlinePrepaid: (b, id) => `સારા સમાચાર — તમારા ${b} ઓર્ડર #${id} નું ચુકવણું મળી ગયું છે.`,
+    headlineCod: (b, id) =>
+      `સારા સમાચાર — તમારા ${b} ઓર્ડર #${id} નું એડવાન્સ ચુકવણું મળી ગયું છે. બાકીની રકમ ડિલિવરી વખતે ચૂકવવાની રહેશે.`,
+    trackingNote: `શિપ થતાં જ ટ્રેકિંગ નંબર અહીં મોકલી દેવાશે.`,
+    signoff: (b) => `${b} પરથી ખરીદી બદલ આભાર.`,
+  },
+};
+
+export function paymentReceivedMessage(order: Order): string {
+  const tpl = PAYMENT_TEMPLATES[order.customer.language] ?? PAYMENT_TEMPLATES.en;
+  const b = brand();
+  const headline = isCodOrder(order)
+    ? tpl.headlineCod(b, order.id.slice(0, 8))
+    : tpl.headlinePrepaid(b, order.id.slice(0, 8));
+
+  return [
+    tpl.greeting(firstName(order.customer.name)),
+    ``,
+    headline,
+    ``,
+    ...orderLines(order),
+    ``,
+    orderBreakdown(order),
+    ``,
+    tpl.trackingNote,
     ``,
     tpl.signoff(b),
   ].join("\n");

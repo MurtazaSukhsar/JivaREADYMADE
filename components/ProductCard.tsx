@@ -37,7 +37,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <h3 className="font-display text-lg leading-tight text-cream transition-colors group-hover:text-ember">
           {product.name}
         </h3>
-        <p className="whitespace-nowrap pt-1 font-body text-sm text-ash">
+        <p className="whitespace-nowrap pt-1 font-display text-base text-ash">
           {formatPrice(product.price, siteConfig.currency)}
         </p>
       </div>

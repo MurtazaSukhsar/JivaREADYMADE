@@ -86,7 +86,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Customer, TranslationKey>>>({});
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "upi" | "cod">("online");
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setCustomer((c) => ({ ...c, [key]: e.target.value }));
@@ -199,46 +199,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // Paying by UPI: the server prices the cart, records a pending order and
-  // we hand the customer over to the dedicated payment page at /pay/[id].
-  //
-  // The cart is intentionally NOT cleared here. If they back out of the
-  // payment page, everything they picked is still waiting for them —
-  // /pay/[id] clears it once the payment is actually confirmed.
-  const handleUpi = async () => {
-    setError(null);
-
-    const errors = validate(customer);
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      setError(t("err.checkFields"));
-      return;
-    }
-
-    setStatus("creating");
-
-    try {
-      const createRes = await fetch("/api/checkout/create-upi-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload()),
-      });
-      const created = await createRes.json();
-
-      if (!createRes.ok) {
-        setError(created.error ?? t("err.couldNotStart"));
-        setStatus("idle");
-        return;
-      }
-
-      setStatus("paying");
-      router.push(`/pay/${created.localOrderId}`);
-    } catch {
-      setError(t("err.server"));
-      setStatus("idle");
-    }
-  };
-
   // Cash on Delivery still takes a small advance online — same Cashfree
   // modal, smaller amount. The server decides how much and marks the order
   // "cod_pending" rather than "paid", because the balance is owed at the door.
@@ -295,10 +255,10 @@ export default function CheckoutPage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         {/* --- delivery details --- */}
         <div className="rounded-sm border border-line/60 bg-slate/40 p-6 sm:p-7">
-          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ember">
+          <p className="font-mono text-[11px] uppercase tracking-widest2 text-cream">
             {t("checkout.deliveryDetails")}
           </p>
-          <p className="mt-2 font-body text-xs text-ash/70">{t("checkout.whatsappNote")}</p>
+          <p className="mt-2 font-body text-xs text-ash">{t("checkout.whatsappNote")}</p>
 
           <div className="mt-6 space-y-5">
             <Field label={t("checkout.name")} error={fieldErrors.name && t(fieldErrors.name)}>
@@ -369,7 +329,7 @@ export default function CheckoutPage() {
 
         {/* --- summary + pay --- */}
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
             {t("checkout.orderSummary")}
           </p>
 
@@ -378,7 +338,7 @@ export default function CheckoutPage() {
               <div key={`${item.slug}-${item.size}-${item.color}`} className="flex justify-between py-3">
                 <div>
                   <p className="font-body text-sm text-cream">{item.name}</p>
-                  <p className="font-mono text-xs text-ash/70">
+                  <p className="font-mono text-xs text-ash">
                     {t("common.qty", { n: item.quantity })} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""}
                   </p>
                 </div>
@@ -391,11 +351,11 @@ export default function CheckoutPage() {
 
           <div className="mt-4 space-y-2.5 border-t border-line/30 pt-3">
             <div className="flex justify-between text-sm">
-              <span className="font-mono uppercase tracking-widest2 text-ash/70">{t("confirm.cod.price")}</span>
+              <span className="font-mono uppercase tracking-widest2 text-ash">{t("confirm.cod.price")}</span>
               <span className="font-body text-cream">{formatPrice(subtotal, siteConfig.currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="font-mono uppercase tracking-widest2 text-ash/70">{t("confirm.cod.courier")}</span>
+              <span className="font-mono uppercase tracking-widest2 text-ash">{t("confirm.cod.courier")}</span>
               <span className="font-body text-cream">{formatPrice(deliveryFee, siteConfig.currency)}</span>
             </div>
             <div className="flex justify-between pt-1 border-t border-line/30">
@@ -403,10 +363,10 @@ export default function CheckoutPage() {
               <span className="font-display text-2xl text-cream">{formatPrice(subtotal + deliveryFee, siteConfig.currency)}</span>
             </div>
           </div>
-          <p className="mt-1.5 font-body text-xs text-ash/60">{t("checkout.estimateNote")}</p>
+          <p className="mt-1.5 font-body text-xs text-ash">{t("checkout.estimateNote")}</p>
 
           <div className="mt-6 border-t border-line/60 pt-5">
-            <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 mb-3">
+            <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash mb-3">
               {t("checkout.paymentMethod")}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -417,7 +377,7 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("online")}
-                className={`rounded-sm border p-4 text-left transition-all duration-200 sm:col-span-2 ${
+                className={`rounded-sm border p-4 text-left transition-all duration-200 ${
                   paymentMethod === "online"
                     ? "border-ember bg-ember/10"
                     : "border-line/60 bg-slate/20 hover:border-ash/50"
@@ -426,26 +386,8 @@ export default function CheckoutPage() {
                 <span className="block font-display text-sm font-semibold text-cream">
                   {t("checkout.method.online")}
                 </span>
-                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
+                <span className="mt-1.5 block font-body text-[10px] text-ash leading-normal">
                   {t("checkout.method.onlineSub")}
-                </span>
-              </button>
-
-              {/* Pay by UPI QR — GPay, PhonePe, Paytm, any UPI app */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("upi")}
-                className={`rounded-sm border p-4 text-left transition-all duration-200 ${
-                  paymentMethod === "upi"
-                    ? "border-ember bg-ember/10"
-                    : "border-line/60 bg-slate/20 hover:border-ash/50"
-                }`}
-              >
-                <span className="block font-display text-sm font-semibold text-cream">
-                  {t("checkout.method.upi")}
-                </span>
-                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
-                  {t("checkout.method.upiSub")}
                 </span>
               </button>
 
@@ -462,16 +404,16 @@ export default function CheckoutPage() {
                 <span className="block font-display text-sm font-semibold text-cream">
                   {t("checkout.method.cod")}
                 </span>
-                <span className="mt-1.5 block font-body text-[10px] text-ash/60 leading-normal">
-                  {t("checkout.method.codSub")}
+                <span className="mt-1.5 block font-body text-[10px] text-ash leading-normal">
+                  {t("checkout.method.codSub", { advance: formatPrice(advanceAmount, siteConfig.currency) })}
                 </span>
               </button>
             </div>
           </div>
 
           {paymentMethod === "cod" && (
-            <div className="mt-5 rounded-sm border border-line/50 bg-slate/20 px-3.5 py-3 font-body text-xs text-ash/80 space-y-1.5 transition-all duration-200">
-              <p className="font-mono text-[10px] uppercase tracking-widest2 text-brass">
+            <div className="mt-5 rounded-sm border border-line/50 bg-slate/20 px-3.5 py-3 font-body text-xs text-ash space-y-1.5 transition-all duration-200">
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-cream">
                 {t("checkout.cod.terms")}
               </p>
               <div className="flex justify-between">
@@ -486,16 +428,16 @@ export default function CheckoutPage() {
                 <span>{t("confirm.cod.total")}</span>
                 <span>{formatPrice(subtotal + deliveryFee, siteConfig.currency)}</span>
               </div>
-              <div className="flex justify-between text-brass">
+              <div className="flex justify-between text-cream">
                 <span>{t("confirm.cod.advance")}</span>
                 <span>{formatPrice(advanceAmount, siteConfig.currency)}</span>
               </div>
               <div className="border-t border-line/30 pt-1.5 flex justify-between font-bold text-cream">
                 <span>{t("checkout.cod.dueOnDelivery")}</span>
-                <span className="text-ember">{formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency)}</span>
+                <span className="text-cream">{formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency)}</span>
               </div>
-              <p className="mt-2.5 border-t border-line/30 pt-2 text-[11px] leading-relaxed text-ash/60">
-                {t("checkout.cod.advanceNote")}
+              <p className="mt-2.5 border-t border-line/30 pt-2 text-[11px] leading-relaxed text-ash">
+                {t("checkout.cod.advanceNote", { advance: formatPrice(advanceAmount, siteConfig.currency) })}
               </p>
             </div>
           )}
@@ -506,23 +448,11 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={handleOnline}
                 disabled={status !== "idle"}
-                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
               >
                 {status === "idle" && t("checkout.payOnline")}
                 {status === "creating" && t("checkout.preparing")}
                 {status === "creating_cod" && t("checkout.openingPayment")}
-                {status === "paying" && t("checkout.waiting")}
-                {status === "verifying" && t("checkout.confirming")}
-              </button>
-            ) : paymentMethod === "upi" ? (
-              <button
-                type="button"
-                onClick={handleUpi}
-                disabled={status !== "idle"}
-                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
-              >
-                {status === "idle" && t("checkout.pay")}
-                {status === "creating" && t("checkout.preparing")}
                 {status === "paying" && t("checkout.waiting")}
                 {status === "verifying" && t("checkout.confirming")}
               </button>
@@ -531,7 +461,7 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={handleCOD}
                 disabled={status !== "idle"}
-                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+                className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
               >
                 {status === "idle" && t("checkout.cod")}
                 {status === "creating_cod" && t("checkout.placingOrder")}
@@ -563,7 +493,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+      <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
         {label}
       </span>
       <div className="mt-1.5">{children}</div>

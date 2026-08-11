@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getAllProducts } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
@@ -15,34 +14,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero — portrait (hero-bg.png) on mobile, landscape (hero-banner.jpg) on sm+ */}
-      <section className="relative w-full overflow-hidden bg-[#6b0020] aspect-[3/4] sm:aspect-auto sm:h-[86vh] sm:min-h-[560px]">
-        {/* Mobile: portrait image */}
-        <Image
-          src="/hero-bg.png"
-          alt="Jiva Readymadewala"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover sm:hidden select-none"
-        />
-        {/* Desktop: landscape image */}
-        <Image
-          src="/hero-banner.jpg"
-          alt="Jiva Readymadewala"
-          fill
-          priority
-          sizes="100vw"
-          className="hidden sm:block object-contain select-none"
-        />
-
-        {/* Radial vignette on edges for depth */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_40%,rgba(60,0,15,0.55)_100%)]" />
-      </section>
-
-
-
-
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <div className="mb-8 flex items-end justify-between border-b border-line/60 pb-4">
           <div>

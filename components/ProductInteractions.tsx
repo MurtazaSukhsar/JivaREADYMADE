@@ -32,6 +32,7 @@ export default function ProductInteractions({
   const router = useRouter();
   const [size, setSize] = useState<string | undefined>(undefined);
   const [localColor, setLocalColor] = useState<string | undefined>(colors[0]);
+  const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +54,7 @@ export default function ProductInteractions({
     }
     setError(null);
     clear();
-    addItem({ slug, name, price, image, size, color });
+    addItem({ slug, name, price, image, size, color }, quantity);
     router.push("/checkout");
   };
 
@@ -63,7 +64,7 @@ export default function ProductInteractions({
       return;
     }
     setError(null);
-    addItem({ slug, name, price, image, size, color });
+    addItem({ slug, name, price, image, size, color }, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -72,6 +73,11 @@ export default function ProductInteractions({
     setSize(s);
     setError(null);
   };
+
+  // Matches cartItemSchema's max(20) in lib/validation.ts — the server
+  // rejects anything past that, so the stepper stops there too.
+  const decreaseQty = () => setQuantity((q) => Math.max(1, q - 1));
+  const increaseQty = () => setQuantity((q) => Math.min(20, q + 1));
 
   const chip = (selected: boolean) =>
     `rounded-sm border px-3 py-1.5 font-mono text-xs uppercase transition-all duration-200 ${
@@ -127,12 +133,39 @@ export default function ProductInteractions({
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between border-t border-line/60 pt-5">
+      <div className="mt-5">
+        <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
+          {t("product.quantity")}
+        </p>
+        <div className="mt-2 flex items-center rounded-sm border border-line w-fit">
+          <button
+            type="button"
+            onClick={decreaseQty}
+            className="px-3.5 py-1.5 font-mono text-sm text-ash transition-colors hover:bg-line/40 hover:text-cream"
+            aria-label={t("cart.decrease")}
+          >
+            −
+          </button>
+          <span className="min-w-[2.5rem] text-center font-mono text-sm text-cream">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            onClick={increaseQty}
+            className="px-3.5 py-1.5 font-mono text-sm text-ash transition-colors hover:bg-line/40 hover:text-cream"
+            aria-label={t("cart.increase")}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between border-t border-line/60 pt-5">
         <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
           {t("common.total")}
         </p>
-        <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-4 py-1.5 font-body text-xl font-bold text-cream">
-          {formatPrice(price, siteConfig.currency)}
+        <span className="whitespace-nowrap rounded-sm border border-line bg-slate px-4 py-1.5 font-display text-2xl text-cream">
+          {formatPrice(price * quantity, siteConfig.currency)}
         </span>
       </div>
 

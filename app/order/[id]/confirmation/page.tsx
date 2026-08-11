@@ -138,7 +138,10 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             <span className="text-ember">{formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency)}</span>
           </div>
           <p className="mt-3 border-t border-line/30 pt-2.5 text-xs leading-relaxed text-ash/60">
-            {t("confirm.cod.advanceNote", { due: formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency) })}
+            {t("confirm.cod.advanceNote", {
+              advance: formatPrice(advanceAmount, siteConfig.currency),
+              due: formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), siteConfig.currency),
+            })}
           </p>
         </div>
       ) : (

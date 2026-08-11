@@ -62,6 +62,13 @@ export const shipOrderSchema = z.object({
   shipped: z.boolean(),
 });
 
+// Courier AWB/tracking numbers vary a lot by carrier — some are pure digits,
+// some mix letters in. Kept permissive; empty string is allowed on purpose
+// so admin can clear a wrongly-entered number.
+export const trackingNumberSchema = z.object({
+  trackingNumber: z.string().trim().max(60),
+});
+
 // What the customer types in after paying by UPI QR. Their app labels it
 // "UPI transaction ID", "UTR" or "Reference no." — usually 12 digits, but
 // PhonePe and a few banks issue longer alphanumeric ones, so this stays

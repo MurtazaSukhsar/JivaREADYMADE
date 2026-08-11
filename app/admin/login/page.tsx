@@ -48,7 +48,7 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <label className="block">
-            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
               Email
             </span>
             <input
@@ -63,7 +63,7 @@ function LoginForm() {
           </label>
 
           <label className="block">
-            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
               Password
             </span>
             <input
@@ -78,7 +78,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+            className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>

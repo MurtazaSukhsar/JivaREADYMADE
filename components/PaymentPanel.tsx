@@ -114,10 +114,10 @@ export default function PaymentPanel({
           what they'll check against their payment app before confirming. */}
       <div className="flex items-baseline justify-between gap-3 border-b border-line/40 pb-4">
         <div>
-          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
             {t("checkout.upi.amount")}
           </span>
-          <p className="mt-0.5 font-body text-xs text-ash/60">
+          <p className="mt-0.5 font-body text-xs text-ash">
             {t("common.qty", { n: itemCount })}
           </p>
         </div>
@@ -125,7 +125,7 @@ export default function PaymentPanel({
           {formatPrice(session.amount, session.currency)}
         </span>
       </div>
-      <p className="mt-2.5 font-body text-xs leading-relaxed text-ash/70">
+      <p className="mt-2.5 font-body text-xs leading-relaxed text-ash">
         {t("checkout.upi.amountNote")}
       </p>
 
@@ -147,7 +147,7 @@ export default function PaymentPanel({
       */}
       {isMobile && (
         <div className="mt-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+          <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
             {t("checkout.upi.openApp")}
           </p>
           <div className="mt-2.5 grid grid-cols-2 gap-2.5">
@@ -170,11 +170,11 @@ export default function PaymentPanel({
       {/* --- the QR: always shown on desktop, on demand on phones --- */}
       {(!isMobile || showQr) && (
       <div className="mt-6">
-        <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+        <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
           {t("checkout.upi.scan")}
         </p>
 
-        <ol className="mt-2.5 space-y-1 font-body text-xs leading-relaxed text-ash/80">
+        <ol className="mt-2.5 space-y-1 font-body text-xs leading-relaxed text-ash">
           {isMobile ? (
             <>
               <li>{t("checkout.upi.mobileStep1")}</li>
@@ -224,7 +224,7 @@ export default function PaymentPanel({
             <a
               href={session.qrDataUrl}
               download={`payment-${session.txnRef}.png`}
-              className="w-full rounded-sm bg-ember py-3 text-center font-mono text-[11px] uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
+              className="w-full rounded-sm bg-ember py-3 text-center font-mono text-[11px] uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110"
             >
               {t("checkout.upi.saveQr")}
             </a>
@@ -238,14 +238,14 @@ export default function PaymentPanel({
         <p className="font-mono text-[10px] uppercase tracking-widest2 text-brass">
           {t("checkout.upi.afterPaying")}
         </p>
-        <p className="mt-2 font-body text-xs leading-relaxed text-ash/80">
+        <p className="mt-2 font-body text-xs leading-relaxed text-ash">
           {t("checkout.upi.refHelp")}
         </p>
 
         <label className="mt-3 block">
-          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
             {t("checkout.upi.refLabel")}{" "}
-            <span className="text-ash/50">{t("checkout.upi.refOptional")}</span>
+            <span className="text-ash">{t("checkout.upi.refOptional")}</span>
           </span>
           <input
             value={upiRef}
@@ -265,7 +265,7 @@ export default function PaymentPanel({
           type="button"
           onClick={submit}
           disabled={busy}
-          className="mt-4 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+          className="mt-4 w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
         >
           {busy ? t("checkout.upi.submitting") : t("checkout.upi.submit")}
         </button>
@@ -285,7 +285,7 @@ export default function PaymentPanel({
           </p>
         )}
 
-        <p className="mt-4 border-t border-line/30 pt-3 font-body text-[11px] leading-relaxed text-ash/60">
+        <p className="mt-4 border-t border-line/30 pt-3 font-body text-[11px] leading-relaxed text-ash">
           {t("checkout.upi.verifyNote")}
         </p>
       </div>
@@ -307,7 +307,7 @@ function AppButton({
       href={href}
       className={`rounded-sm px-3 py-3.5 text-center font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 ${
         primary
-          ? "bg-ember text-carbon hover:shadow-glow hover:brightness-110"
+          ? "bg-ember text-cream hover:shadow-glow hover:brightness-110"
           : "border border-line/60 text-cream hover:border-ember hover:text-ember"
       }`}
     >

@@ -30,7 +30,7 @@ exactly `Products` and `Orders`. Give each a header row:
 
 - `Products` row 1: `Name | Price | Sizes | Colors | Description | Image URLs`
 - `Orders` row 1, 18 columns A–R:
-  `Order ID | Date | Status | Customer Name | Phone | Email | Address | City | Pincode | Items | Amount | Currency | Razorpay Order ID | Payment ID | Shipped | Shipped At | Items JSON | Language`
+  `Order ID | Date | Status | Customer Name | Phone | Email | Address | City | Pincode | Items | Amount | Currency | Razorpay Order ID | Payment ID | Shipped | Shipped At | Items JSON | Language | State | Tracking Number`
 
 The app writes and updates the `Orders` tab itself — you never have to fill
 it in. `Items` (column J) is the readable summary for whoever packs the

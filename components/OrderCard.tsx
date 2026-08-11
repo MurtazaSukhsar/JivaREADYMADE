@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Order } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
-import { shippedMessage, whatsAppLink } from "@/lib/whatsapp";
+import { paymentReceivedMessage, shippedMessage, whatsAppLink } from "@/lib/whatsapp";
 import { LANGUAGES } from "@/lib/i18n";
 
 function formatDate(iso: string): string {
@@ -27,7 +27,59 @@ export default function OrderCard({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState(false);
-  const [message, setMessage] = useState(() => shippedMessage(order));
+
+  // Courier AWB number. Kept as its own field on the order, editable
+  // independently of the shipped toggle — the shop owner often gets this
+  // from the courier before or after actually marking the order shipped.
+  const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber ?? "");
+  const [trackingSaving, setTrackingSaving] = useState(false);
+  const [trackingSaved, setTrackingSaved] = useState(false);
+
+  const saveTracking = async () => {
+    setTrackingSaving(true);
+    setError(null);
+    setTrackingSaved(false);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/tracking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackingNumber: trackingNumber.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not save the tracking number.");
+        return;
+      }
+      setTrackingSaved(true);
+      setTimeout(() => setTrackingSaved(false), 2000);
+      router.refresh();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setTrackingSaving(false);
+    }
+  };
+
+  // Whichever tracking number is currently in the input — saved or not —
+  // is what the shipped message should quote, so the admin sees exactly
+  // what they're about to send rather than a stale saved value.
+  const orderForMessage = { ...order, trackingNumber: trackingNumber.trim() || undefined };
+
+  // Which pre-typed message is loaded below — pick a sensible starting point
+  // from the order's own state (already shipped → the shipped message;
+  // paid/cod_pending and not yet shipped → payment received) but the admin
+  // can switch freely before sending.
+  const [messageType, setMessageType] = useState<"payment" | "shipped">(
+    order.shipped ? "shipped" : "payment"
+  );
+  const [message, setMessage] = useState(() =>
+    messageType === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(order)
+  );
+
+  const applyTemplate = (type: "payment" | "shipped") => {
+    setMessageType(type);
+    setMessage(type === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(order));
+  };
 
   // UPI QR payments arrive with no confirmation from the bank — the customer
   // just types in the reference number their app showed them. So this order
@@ -94,7 +146,7 @@ export default function OrderCard({ order }: { order: Order }) {
     <article className="rounded-sm border border-line/60 bg-slate/40 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-xs text-ash/70">
+          <p className="font-mono text-xs text-ash">
             #{order.id.slice(0, 8)} · {formatDate(order.createdAt)}
           </p>
           <p className="mt-1 font-display text-xl text-cream">{order.customer.name || "—"}</p>
@@ -122,7 +174,7 @@ export default function OrderCard({ order }: { order: Order }) {
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
+          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
             Ship to
           </p>
           <div className="mt-2 space-y-0.5 font-body text-sm text-cream">
@@ -138,7 +190,7 @@ export default function OrderCard({ order }: { order: Order }) {
         </div>
 
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
+          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
             Items
           </p>
           <ul className="mt-2 space-y-1 font-body text-sm text-cream">
@@ -162,7 +214,7 @@ export default function OrderCard({ order }: { order: Order }) {
           </ul>
 
           <div className="mt-3 flex items-center justify-between border-t border-line/50 pt-2">
-            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/70">
+            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
               Total
             </span>
             <span className="font-body text-sm text-cream">
@@ -170,7 +222,7 @@ export default function OrderCard({ order }: { order: Order }) {
             </span>
           </div>
           {order.razorpayPaymentId && !awaitingUpiCheck && (
-            <p className="mt-1 font-mono text-[11px] text-ash/60">
+            <p className="mt-1 font-mono text-[11px] text-ash">
               Payment {order.razorpayPaymentId}
             </p>
           )}
@@ -189,7 +241,7 @@ export default function OrderCard({ order }: { order: Order }) {
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                 Their UPI reference
               </p>
               {order.razorpayPaymentId ? (
@@ -199,13 +251,13 @@ export default function OrderCard({ order }: { order: Order }) {
               ) : (
                 // The reference is optional, so this is common and not a red
                 // flag on its own — match by amount and time instead.
-                <p className="mt-1 font-body text-xs italic text-ash/70">
+                <p className="mt-1 font-body text-xs italic text-ash">
                   Not given — match by amount and time, or by our reference.
                 </p>
               )}
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70">
+              <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash">
                 Our reference (on your statement)
               </p>
               <p className="mt-1 select-all break-all font-mono text-sm text-cream">
@@ -216,13 +268,37 @@ export default function OrderCard({ order }: { order: Order }) {
         </div>
       )}
 
-      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line/50 pt-4">
+      <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-line/50 pt-4">
+        <label className="block">
+          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
+            Tracking number
+          </span>
+          <div className="mt-1.5 flex gap-2">
+            <input
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="e.g. Delhivery 1234567890"
+              className="input w-56"
+            />
+            <button
+              type="button"
+              disabled={trackingSaving || trackingNumber.trim() === (order.trackingNumber ?? "")}
+              onClick={saveTracking}
+              className="rounded-sm border border-line px-3.5 font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:border-ember hover:text-ember disabled:opacity-40"
+            >
+              {trackingSaving ? "Saving…" : trackingSaved ? "Saved" : "Save"}
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line/50 pt-4">
         {awaitingUpiCheck && (
           <button
             type="button"
             disabled={busy}
             onClick={markPaid}
-            className="rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-carbon transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+            className="rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 disabled:opacity-50"
           >
             {busy ? "Saving…" : "Money received — mark paid"}
           </button>
@@ -235,17 +311,45 @@ export default function OrderCard({ order }: { order: Order }) {
           className={`rounded-sm px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 disabled:opacity-50 ${
             shipped
               ? "border border-line text-ash hover:border-ash hover:text-cream"
-              : "bg-ember text-carbon hover:shadow-glow hover:brightness-110"
+              : "bg-ember text-cream hover:shadow-glow hover:brightness-110"
           }`}
         >
           {busy ? "Saving…" : shipped ? "Undo shipped" : "Mark shipped"}
         </button>
 
+        {/* Which pre-typed message is loaded into the editor below — switching
+            this swaps the template but keeps any manual edits from being lost
+            silently, since it only fires on an explicit click. */}
+        <div className="flex rounded-sm border border-line/60 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => applyTemplate("payment")}
+            className={`px-3 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 ${
+              messageType === "payment"
+                ? "bg-ember text-cream"
+                : "text-ash hover:text-cream"
+            }`}
+          >
+            Payment received
+          </button>
+          <button
+            type="button"
+            onClick={() => applyTemplate("shipped")}
+            className={`px-3 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 border-l border-line/60 ${
+              messageType === "shipped"
+                ? "bg-ember text-cream"
+                : "text-ash hover:text-cream"
+            }`}
+          >
+            Shipped
+          </button>
+        </div>
+
         <a
           href={whatsAppLink(order.customer.phone, message)}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-sm border border-ember/60 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-ember transition-all duration-200 hover:bg-ember hover:text-carbon"
+          className="rounded-sm border border-ember/60 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-ember transition-all duration-200 hover:bg-ember hover:text-cream"
         >
           Send WhatsApp
         </a>
@@ -270,12 +374,12 @@ export default function OrderCard({ order }: { order: Order }) {
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setMessage(shippedMessage(order))}
+              onClick={() => applyTemplate(messageType)}
               className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-cream"
             >
               Reset to template
             </button>
-            <span className="font-body text-xs text-ash/60">
+            <span className="font-body text-xs text-ash">
               Edits apply to this order only — change the default in lib/whatsapp.ts.
             </span>
           </div>

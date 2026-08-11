@@ -158,10 +158,10 @@ export default function AdminPage() {
           </Field>
 
           <div className="border-t border-line/40 pt-4">
-            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80 block mb-1">
+            <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash block mb-1">
               Color-Specific Options & Images (Optional)
             </span>
-            <p className="font-body text-xs text-ash/60 mb-3">
+            <p className="font-body text-xs text-ash mb-3">
               Add colors and upload/paste their corresponding images so the customer sees the correct image when selecting that color.
             </p>
 
@@ -171,7 +171,7 @@ export default function AdminPage() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     {/* Color Name Input */}
                     <div className="flex-1">
-                      <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                      <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash block mb-1">
                         Colour Name
                       </span>
                       <input
@@ -189,7 +189,7 @@ export default function AdminPage() {
 
                     {/* Image Upload/URL for this color */}
                     <div>
-                      <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash/70 block mb-1">
+                      <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash block mb-1">
                         Colour Image
                       </span>
                       
@@ -203,7 +203,7 @@ export default function AdminPage() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-[10px] font-mono text-ash/40">
+                            <div className="flex h-full w-full items-center justify-center text-[10px] font-mono text-ash">
                               No Img
                             </div>
                           )}
@@ -362,7 +362,7 @@ export default function AdminPage() {
             placeholder="https://... , /uploads/..."
             className="input"
           />
-          <p className="mt-1.5 font-body text-xs text-ash/60">
+          <p className="mt-1.5 font-body text-xs text-ash">
             Upload an image or manually enter URLs (comma separated). Leave blank for placeholder.
           </p>
         </Field>
@@ -370,7 +370,7 @@ export default function AdminPage() {
         <button
           type="submit"
           disabled={status.state === "submitting" || isUploading}
-          className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+          className="w-full rounded-sm bg-ember py-3.5 font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
         >
           {status.state === "submitting" ? "Adding…" : "Add product"}
         </button>
@@ -400,7 +400,7 @@ export default function AdminPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash/80">
+      <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
         {label}
       </span>
       <div className="mt-1.5">{children}</div>

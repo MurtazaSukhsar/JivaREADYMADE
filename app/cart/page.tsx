@@ -103,7 +103,7 @@ export default function CartPage() {
 
       <Link
         href="/checkout"
-        className="mt-6 block rounded-sm bg-ember py-3.5 text-center font-mono text-xs uppercase tracking-widest2 text-carbon transition-all duration-200 hover:shadow-glow hover:brightness-110"
+        className="mt-6 block rounded-sm bg-ember py-3.5 text-center font-mono text-xs uppercase tracking-widest2 text-cream transition-all duration-200 hover:shadow-glow hover:brightness-110"
       >
         {t("cart.checkout")}
       </Link>
