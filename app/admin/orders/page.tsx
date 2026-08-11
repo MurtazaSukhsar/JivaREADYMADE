@@ -17,11 +17,20 @@ export default async function AdminOrdersPage() {
     error = err instanceof Error ? err.message : "Could not read the Orders sheet.";
   }
 
-  const paid = orders.filter((o) => o.status === "paid");
+  // "created" is written the moment someone starts checkout, before any
+  // payment — that's what makes an abandoned cart recoverable, but it also
+  // means most "created" rows are just people who never paid. "failed" is a
+  // payment that was attempted and didn't go through. Neither belongs in the
+  // working list; only statuses where money has actually moved do.
+  const visibleOrders = orders.filter(
+    (o) => o.status === "paid" || o.status === "cod_pending" || o.status === "upi_pending"
+  );
+
+  const paid = visibleOrders.filter((o) => o.status === "paid");
   const awaitingShipment = paid.filter((o) => !o.shipped);
   // UPI QR payments can't confirm themselves, so these are sitting waiting
   // for someone to check the bank and press "mark paid".
-  const awaitingUpiCheck = orders.filter((o) => o.status === "upi_pending");
+  const awaitingUpiCheck = visibleOrders.filter((o) => o.status === "upi_pending");
 
   return (
     <section className="mx-auto max-w-4xl px-5 py-14 sm:px-8">
@@ -37,7 +46,7 @@ export default async function AdminOrdersPage() {
           </h1>
         </div>
         <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
-          {paid.length} paid · {orders.length} total
+          {paid.length} paid · {visibleOrders.length} total
         </p>
       </div>
 
@@ -55,15 +64,15 @@ export default async function AdminOrdersPage() {
         </p>
       )}
 
-      {!error && orders.length === 0 && (
+      {!error && visibleOrders.length === 0 && (
         <p className="mt-10 font-body text-sm text-ash">
           No orders yet. They appear here — and in the Orders tab of your Google
-          Sheet — the moment someone checks out.
+          Sheet — as soon as one is paid (or a Cash on Delivery advance clears).
         </p>
       )}
 
       <div className="mt-8 space-y-5">
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <OrderCard key={order.id} order={order} />
         ))}
       </div>

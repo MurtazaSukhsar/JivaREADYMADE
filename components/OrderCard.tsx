@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Order } from "@/lib/types";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, isCodOrder, getDeliveryFee, getCodAdvance } from "@/lib/format";
 import { paymentReceivedMessage, shippedMessage, whatsAppLink } from "@/lib/whatsapp";
 import { LANGUAGES } from "@/lib/i18n";
 
@@ -27,6 +27,11 @@ export default function OrderCard({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState(false);
+
+  // Cash-on-delivery vs paid-in-full — shown as a badge and also what
+  // decides which WhatsApp breakdown (advance + due, or a straight total)
+  // is actually correct for this order.
+  const cod = isCodOrder(order);
 
   // Courier AWB number. Kept as its own field on the order, editable
   // independently of the shipped toggle — the shop owner often gets this
@@ -78,10 +83,11 @@ export default function OrderCard({ order }: { order: Order }) {
   // what they're about to send rather than a stale saved value.
   const orderForMessage = { ...order, trackingNumber: trackingNumber.trim() || undefined };
 
-  // Which pre-typed message is loaded below — pick a sensible starting point
-  // from the order's own state (already shipped → the shipped message;
-  // paid/cod_pending and not yet shipped → payment received) but the admin
-  // can switch freely before sending.
+  // Step 1 is always "payment received", step 2 is "shipped" — that's the
+  // real order these two messages go out in, so the UI walks the admin
+  // through it in that sequence instead of presenting two equal, unordered
+  // tabs. The tracking number only matters for step 2, so it stays hidden
+  // until that step is selected.
   const [messageType, setMessageType] = useState<"payment" | "shipped">(
     order.shipped ? "shipped" : "payment"
   );
@@ -99,6 +105,17 @@ export default function OrderCard({ order }: { order: Order }) {
   // is a *claim* of payment until someone checks the account and presses the
   // button below.
   const awaitingUpiCheck = status === "upi_pending";
+
+  // A COD order sits in "cod_pending" forever unless someone tells the site
+  // the courier actually collected the rest at the door — there's no bank
+  // webhook for cash changing hands in person, so this is a manual flip,
+  // same shape as the UPI check above.
+  const awaitingCodBalance = cod && status === "cod_pending";
+  const codSubtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const codQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const codDeliveryFee = getDeliveryFee(codQty);
+  const codAdvance = getCodAdvance(codQty);
+  const codBalanceDue = Math.max(0, codSubtotal + codDeliveryFee - codAdvance);
 
   const markPaid = async () => {
     setBusy(true);
@@ -166,6 +183,13 @@ export default function OrderCard({ order }: { order: Order }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest2 ${
+              cod ? "border-brass/40 bg-brass/10 text-brass" : "border-line bg-slate text-ash"
+            }`}
+          >
+            {cod ? "COD" : "Prepaid"}
+          </span>
           <span
             className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest2 ${statusTone}`}
           >
@@ -297,126 +321,147 @@ export default function OrderCard({ order }: { order: Order }) {
               </p>
             </div>
           </div>
-        </div>
-      )}
-
-      <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-line/50 pt-4">
-        <label className="block">
-          <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
-            Tracking number
-          </span>
-          <div className="mt-1.5 flex gap-2">
-            <input
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              placeholder="e.g. Delhivery 1234567890"
-              className="input w-56"
-            />
-            <button
-              type="button"
-              disabled={trackingSaving || trackingNumber.trim() === (order.trackingNumber ?? "")}
-              onClick={saveTracking}
-              className="rounded-sm border border-line px-3.5 font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:border-ember hover:text-ember disabled:opacity-40"
-            >
-              {trackingSaving ? "Saving…" : trackingSaved ? "Saved" : "Save"}
-            </button>
-          </div>
-        </label>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line/50 pt-4">
-        {awaitingUpiCheck && (
           <button
             type="button"
             disabled={busy}
             onClick={markPaid}
-            className="rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+            className="mt-3 rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 disabled:opacity-50"
           >
             {busy ? "Saving…" : "Money received — mark paid"}
           </button>
-        )}
-
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => toggleShipped(!shipped)}
-          className={`rounded-sm px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 disabled:opacity-50 ${
-            shipped
-              ? "border border-line text-ash hover:border-ash hover:text-cream"
-              : "bg-ember text-cream hover:shadow-glow hover:brightness-110"
-          }`}
-        >
-          {busy ? "Saving…" : shipped ? "Undo shipped" : "Mark shipped"}
-        </button>
-
-        {/* Which pre-typed message is loaded into the editor below — switching
-            this swaps the template but keeps any manual edits from being lost
-            silently, since it only fires on an explicit click. */}
-        <div className="flex rounded-sm border border-line/60 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => applyTemplate("payment")}
-            className={`px-3 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 ${
-              messageType === "payment"
-                ? "bg-ember text-cream"
-                : "text-ash hover:text-cream"
-            }`}
-          >
-            Payment received
-          </button>
-          <button
-            type="button"
-            onClick={() => applyTemplate("shipped")}
-            className={`px-3 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 border-l border-line/60 ${
-              messageType === "shipped"
-                ? "bg-ember text-cream"
-                : "text-ash hover:text-cream"
-            }`}
-          >
-            Shipped
-          </button>
-        </div>
-
-        <a
-          href={whatsAppLink(order.customer.phone, message)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-sm border border-ember/60 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-ember transition-all duration-200 hover:bg-ember hover:text-cream"
-        >
-          Send WhatsApp
-        </a>
-
-        <button
-          type="button"
-          onClick={() => setShowMessage((v) => !v)}
-          className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-cream"
-        >
-          {showMessage ? "Hide message" : "Edit message"}
-        </button>
-      </div>
-
-      {showMessage && (
-        <div className="mt-4">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={10}
-            className="input resize-y font-mono text-xs leading-relaxed"
-          />
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => applyTemplate(messageType)}
-              className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-cream"
-            >
-              Reset to template
-            </button>
-            <span className="font-body text-xs text-ash">
-              Edits apply to this order only — change the default in lib/whatsapp.ts.
-            </span>
-          </div>
         </div>
       )}
+
+      {awaitingCodBalance && (
+        <div className="mt-5 rounded-sm border border-brass/40 bg-brass/5 px-4 py-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-widest2 text-brass">
+            COD — balance due at delivery
+          </p>
+          <p className="mt-2 font-body text-xs leading-relaxed text-ash">
+            Advance of <span className="text-cream">{formatPrice(codAdvance, order.currency)}</span> is
+            already in. Once the courier hands over{" "}
+            <span className="text-cream">{formatPrice(codBalanceDue, order.currency)}</span> in cash and
+            it's actually in hand, mark this paid.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={markPaid}
+            className="mt-3 rounded-sm bg-brass px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-cream transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Balance collected — mark paid"}
+          </button>
+        </div>
+      )}
+
+      {/* Two-step message flow: step 1 always confirms the payment that just
+          came in, step 2 is for once you're actually shipping — the tracking
+          number belongs there and only appears once that step is picked,
+          instead of sitting on screen for every order regardless of stage. */}
+      <div className="mt-5 border-t border-line/50 pt-4">
+        <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
+          Message
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <StepTab
+            number={1}
+            label="Payment received"
+            active={messageType === "payment"}
+            onClick={() => applyTemplate("payment")}
+          />
+          <StepTab
+            number={2}
+            label="Shipped"
+            active={messageType === "shipped"}
+            onClick={() => applyTemplate("shipped")}
+          />
+        </div>
+
+        {messageType === "shipped" && (
+          <div className="mt-3 rounded-sm border border-line/50 bg-night/40 p-3.5">
+            <label className="block">
+              <span className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
+                Tracking number
+              </span>
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="e.g. Delhivery 1234567890"
+                  className="input w-56"
+                />
+                <button
+                  type="button"
+                  disabled={trackingSaving || trackingNumber.trim() === (order.trackingNumber ?? "")}
+                  onClick={saveTracking}
+                  className="rounded-sm border border-line px-3.5 font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:border-ember hover:text-ember disabled:opacity-40"
+                >
+                  {trackingSaving ? "Saving…" : trackingSaved ? "Saved" : "Save"}
+                </button>
+              </div>
+            </label>
+            <p className="mt-2 font-body text-xs text-ash">
+              Type it here, hit Save, then send — it's pulled straight into the message below.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => toggleShipped(!shipped)}
+            className={`rounded-sm px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 disabled:opacity-50 ${
+              shipped
+                ? "border border-line text-ash hover:border-ash hover:text-cream"
+                : "bg-ember text-cream hover:shadow-glow hover:brightness-110"
+            }`}
+          >
+            {busy ? "Saving…" : shipped ? "Undo shipped" : "Mark shipped"}
+          </button>
+
+          <a
+            href={whatsAppLink(order.customer.phone, message)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-sm border border-ember/60 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-ember transition-all duration-200 hover:bg-ember hover:text-cream"
+          >
+            Send WhatsApp
+          </a>
+
+          <button
+            type="button"
+            onClick={() => setShowMessage((v) => !v)}
+            className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-cream"
+          >
+            {showMessage ? "Hide message" : "Edit message"}
+          </button>
+        </div>
+
+        {showMessage && (
+          <div className="mt-4">
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={10}
+              className="input resize-y font-mono text-xs leading-relaxed"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => applyTemplate(messageType)}
+                className="font-mono text-[11px] uppercase tracking-widest2 text-ash transition-colors hover:text-cream"
+              >
+                Reset to template
+              </button>
+              <span className="font-body text-xs text-ash">
+                Edits apply to this order only — change the default in lib/whatsapp.ts.
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {error && (
         <p className="mt-3 rounded-sm border border-ember/40 bg-ember/10 px-3 py-2 font-body text-xs text-ember">
@@ -456,5 +501,41 @@ function RefRow({
         {copied ? "Copied" : "Copy"}
       </button>
     </div>
+  );
+}
+
+// Numbered step toggle — makes the "do this, then this" order visible
+// instead of presenting Payment received / Shipped as two equal, unordered
+// tabs.
+function StepTab({
+  number,
+  label,
+  active,
+  onClick,
+}: {
+  number: number;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-sm border px-3 py-2 font-mono text-[11px] uppercase tracking-widest2 transition-all duration-200 ${
+        active
+          ? "border-ember bg-ember text-cream"
+          : "border-line/60 text-ash hover:border-ash hover:text-cream"
+      }`}
+    >
+      <span
+        className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+          active ? "bg-cream text-ember" : "bg-line/60 text-ash"
+        }`}
+      >
+        {number}
+      </span>
+      {label}
+    </button>
   );
 }
