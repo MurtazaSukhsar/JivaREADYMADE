@@ -30,7 +30,12 @@ const csp = [
   `frame-src 'self' ${cashfree} https: https://api.razorpay.com https://checkout.razorpay.com`,
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Cashfree's in-page modal (not a cross-origin iframe) submits a form
+  // directly to their API to load the checkout session — that submission
+  // runs in OUR document, so it's bound by our form-action, not theirs.
+  // Without api/sandbox.cashfree.com listed here, the browser silently
+  // blocks the submission and the modal never shows anything.
+  `form-action 'self' ${cashfree}`,
   "frame-ancestors 'self'",
 ].join("; ");
 
