@@ -293,15 +293,6 @@ export default function CheckoutPage() {
               />
             </Field>
 
-            <Field label={t("checkout.state")} error={fieldErrors.state && t(fieldErrors.state)}>
-              <input
-                value={customer.state}
-                onChange={set("state")}
-                placeholder="Maharashtra"
-                className="input"
-              />
-            </Field>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t("checkout.city")} error={fieldErrors.city && t(fieldErrors.city)}>
                 <input
@@ -324,6 +315,15 @@ export default function CheckoutPage() {
                 />
               </Field>
             </div>
+
+            <Field label={t("checkout.state")} error={fieldErrors.state && t(fieldErrors.state)}>
+              <input
+                value={customer.state}
+                onChange={set("state")}
+                placeholder="Maharashtra"
+                className="input"
+              />
+            </Field>
           </div>
         </div>
 

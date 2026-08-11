@@ -35,6 +35,19 @@ export default function OrderCard({ order }: { order: Order }) {
   const [trackingSaving, setTrackingSaving] = useState(false);
   const [trackingSaved, setTrackingSaved] = useState(false);
 
+  // Which reference (if either) was just copied — used to flash "Copied" on
+  // the right button without a separate boolean per field.
+  const [copiedField, setCopiedField] = useState<"order" | "payment" | null>(null);
+  const copyRef = async (field: "order" | "payment", value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch {
+      // Clipboard blocked — the value is selectable text either way.
+    }
+  };
+
   const saveTracking = async () => {
     setTrackingSaving(true);
     setError(null);
@@ -221,10 +234,29 @@ export default function OrderCard({ order }: { order: Order }) {
               {formatPrice(order.amount, order.currency)}
             </span>
           </div>
-          {order.razorpayPaymentId && !awaitingUpiCheck && (
-            <p className="mt-1 font-mono text-[11px] text-ash">
-              Payment {order.razorpayPaymentId}
-            </p>
+          {/* Same IDs Cashfree shows on their dashboard — the Order ID here
+              is the exact string Cashfree has for this order (we send our
+              own order id as theirs when creating it, on purpose, so there's
+              never a separate mapping to look up). Search either one in
+              Cashfree's dashboard to pull up this exact transaction and
+              confirm the amount that actually landed. */}
+          {!awaitingUpiCheck && (
+            <div className="mt-3 space-y-1.5 border-t border-line/50 pt-2">
+              <RefRow
+                label="Cashfree Order ID"
+                value={order.razorpayOrderId}
+                copied={copiedField === "order"}
+                onCopy={() => copyRef("order", order.razorpayOrderId)}
+              />
+              {order.razorpayPaymentId && (
+                <RefRow
+                  label="Cashfree Payment ID"
+                  value={order.razorpayPaymentId}
+                  copied={copiedField === "payment"}
+                  onCopy={() => copyRef("payment", order.razorpayPaymentId!)}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -392,5 +424,37 @@ export default function OrderCard({ order }: { order: Order }) {
         </p>
       )}
     </article>
+  );
+}
+
+// A labelled, full, copyable reference id — full because a truncated id is
+// useless for matching against Cashfree's dashboard, and copyable because
+// retyping a 20+ character id by hand is how typos get into a "did this
+// payment actually match" check.
+function RefRow({
+  label,
+  value,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="font-mono text-[10px] uppercase tracking-widest2 text-ash">{label}</p>
+        <p className="select-all break-all font-mono text-xs text-cream">{value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="flex-shrink-0 font-mono text-[10px] uppercase tracking-widest2 text-ash transition-colors hover:text-ember"
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
   );
 }

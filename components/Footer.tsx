@@ -23,12 +23,6 @@ export default function Footer() {
             <p className="mt-3 font-body text-sm leading-relaxed text-ash max-w-[22ch]">
               {t("footer.tagline")}
             </p>
-            <Link
-              href="/shop"
-              className="mt-5 inline-block font-mono text-[11px] uppercase tracking-widest2 text-cream/70 transition-colors hover:text-ember"
-            >
-              Shop the collection →
-            </Link>
           </div>
 
           {/* Navigation */}
