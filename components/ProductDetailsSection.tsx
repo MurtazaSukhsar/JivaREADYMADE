@@ -11,45 +11,50 @@ export default function ProductDetailsSection({ product }: { product: Product })
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState<string | undefined>(product.colors[0]);
 
+  // "DARK GREEN" and ".../dark-green_01.jpg" should match, so compare with
+  // separators and case stripped out rather than raw substrings.
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
   // Handle color selection change
   const handleColorChange = (newColor: string) => {
     setSelectedColor(newColor);
-    
-    // We want to find the corresponding image.
-    // 1. Let's try name matching: see if any image URL contains the color name (case-insensitive)
-    const colorLower = newColor.toLowerCase();
-    const matchedIndex = product.images.findIndex(img => 
-      img.toLowerCase().includes(colorLower)
-    );
-    
+
+    // 1. Name match: does any image URL mention this colour?
+    const colorKey = normalize(newColor);
+    const matchedIndex = colorKey
+      ? product.images.findIndex((img) => normalize(img).includes(colorKey))
+      : -1;
+
     if (matchedIndex !== -1) {
       setActiveImageIndex(matchedIndex);
-    } else {
-      // 2. Fallback: match by index
-      const colorIndex = product.colors.indexOf(newColor);
-      if (colorIndex !== -1 && colorIndex < product.images.length) {
-        setActiveImageIndex(colorIndex);
-      }
+      return;
+    }
+
+    // 2. Fallback: match by index
+    const colorIndex = product.colors.indexOf(newColor);
+    if (colorIndex !== -1 && colorIndex < product.images.length) {
+      setActiveImageIndex(colorIndex);
     }
   };
 
   // Handle image scroll/click change
   const handleActiveImageChange = (newIndex: number) => {
     setActiveImageIndex(newIndex);
-    
-    // We want to find the corresponding color.
-    // 1. Try index match: if index is within colors range
+
+    // 1. Name match first — if the image URL names a colour, trust that over
+    // position, otherwise a longer image list drifts out of sync.
+    const imageKey = normalize(product.images[newIndex] ?? "");
+    const matchedColor = product.colors.find(
+      (c) => normalize(c) && imageKey.includes(normalize(c))
+    );
+    if (matchedColor) {
+      setSelectedColor(matchedColor);
+      return;
+    }
+
+    // 2. Fallback: index match
     if (newIndex < product.colors.length) {
       setSelectedColor(product.colors[newIndex]);
-    } else {
-      // 2. Fallback: try name matching in the image URL at this index
-      const imageUrl = product.images[newIndex]?.toLowerCase() || "";
-      const matchedColor = product.colors.find(c => 
-        imageUrl.includes(c.toLowerCase())
-      );
-      if (matchedColor) {
-        setSelectedColor(matchedColor);
-      }
     }
   };
 

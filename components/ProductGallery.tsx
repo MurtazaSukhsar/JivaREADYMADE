@@ -24,7 +24,34 @@ export default function ProductGallery({
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // A programmatic jump still fires scroll events. Without this guard the
+  // handler below reads every intermediate offset and reports it upward, so
+  // picking a colour looked like it was stepping through all the other
+  // colours on the way there.
+  const suppressScroll = useRef(false);
+  const suppressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const jumpTo = (index: number) => {
+    const container = scrollRef.current;
+    if (!container || container.clientWidth === 0) return;
+    suppressScroll.current = true;
+    if (suppressTimer.current) clearTimeout(suppressTimer.current);
+    // "instant" beats the container's CSS scroll-behavior: smooth, which
+    // would otherwise animate across every slide in between.
+    container.scrollTo({ left: container.clientWidth * index, behavior: "instant" as ScrollBehavior });
+    suppressTimer.current = setTimeout(() => {
+      suppressScroll.current = false;
+    }, 100);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (suppressTimer.current) clearTimeout(suppressTimer.current);
+    };
+  }, []);
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (suppressScroll.current) return;
     const target = e.currentTarget;
     if (target.clientWidth === 0) return;
     const index = Math.round(target.scrollLeft / target.clientWidth);
@@ -43,31 +70,19 @@ export default function ProductGallery({
     } else {
       setLocalActive(index);
     }
-    if (scrollRef.current) {
-      const container = scrollRef.current;
-      if (container.clientWidth > 0) {
-        container.scrollTo({
-          left: container.clientWidth * index,
-          behavior: "smooth",
-        });
-      }
-    }
+    jumpTo(index);
   };
 
-  // Sync scroll position when active changes externally
+  // Sync scroll position when active changes externally (e.g. colour picked)
   useEffect(() => {
-    if (isControlled && scrollRef.current) {
-      const container = scrollRef.current;
-      if (container.clientWidth > 0) {
-        const expectedLeft = container.clientWidth * active;
-        if (Math.abs(container.scrollLeft - expectedLeft) > 5) {
-          container.scrollTo({
-            left: expectedLeft,
-            behavior: "smooth",
-          });
-        }
-      }
+    if (!isControlled) return;
+    const container = scrollRef.current;
+    if (!container || container.clientWidth === 0) return;
+    const expectedLeft = container.clientWidth * active;
+    if (Math.abs(container.scrollLeft - expectedLeft) > 5) {
+      jumpTo(active);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, isControlled]);
 
   return (
