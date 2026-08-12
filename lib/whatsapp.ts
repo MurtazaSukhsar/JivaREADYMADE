@@ -94,7 +94,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     courier: "Courier Charge",
     total: "Total",
     advance: "We have received your advance payment",
-    due: "Delivery Time Payment",
+    due: "Final amount payable on delivery",
     totalPaid: "You have paid total",
   },
   hi: {
@@ -102,7 +102,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     courier: "कूरियर शुल्क",
     total: "कुल योग",
     advance: "हमें आपका एडवांस भुगतान मिल गया है",
-    due: "डिलीवरी के समय भुगतान",
+    due: "डिलीवरी पर देय अंतिम राशि",
     totalPaid: "आपने कुल भुगतान किया है",
   },
   gu: {
@@ -110,7 +110,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     courier: "કુરિયર ચાર્જ",
     total: "કુલ સરવાળો",
     advance: "અમને તમારી એડવાન્સ ચુકવણી મળી ગઈ છે",
-    due: "ડિલિવરી વખતે ચુકવણી",
+    due: "ડિલિવરી વખતે ચૂકવવાની અંતિમ રકમ",
     totalPaid: "તમે કુલ ચૂકવેલ છે",
   },
 };
@@ -129,13 +129,10 @@ function orderBreakdown(order: Order): string {
   const advanceAmount = getCodAdvance(totalQty);
 
   if (isCodOrder(order)) {
-    return [
-      `${lbl.price} : ${formatPrice(subtotal, currency)}`,
-      `${lbl.courier} : ${formatPrice(deliveryFee, currency)}`,
-      `${lbl.total} : ${formatPrice(subtotal + deliveryFee, currency)}`,
-      `${lbl.advance}  : ${formatPrice(advanceAmount, currency)}`,
-      `${lbl.due} : ${formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), currency)}`,
-    ].join("\n");
+    // Skip the price/courier/total/advance breakdown here — the advance is
+    // already stated in the headline above, and the customer saw the full
+    // breakdown at checkout. Only the remaining amount actually matters now.
+    return `${lbl.due} : ${formatPrice(Math.max(0, subtotal + deliveryFee - advanceAmount), currency)}`;
   }
 
   const courierPaid = Math.max(0, order.amount - subtotal);
@@ -223,6 +220,9 @@ const PAYMENT_TEMPLATES: Record<
 
 export function paymentReceivedMessage(order: Order): string {
   const tpl = PAYMENT_TEMPLATES[order.customer.language] ?? PAYMENT_TEMPLATES.en;
+  // Shares the "Tracking number: X" line with the shipped message rather
+  // than duplicating it — no reason for the wording to drift between them.
+  const shippedTpl = TEMPLATES[order.customer.language] ?? TEMPLATES.en;
   const b = brand();
   const headline = isCodOrder(order)
     ? tpl.headlineCod(b, order.id.slice(0, 8))
@@ -237,7 +237,9 @@ export function paymentReceivedMessage(order: Order): string {
     ``,
     orderBreakdown(order),
     ``,
-    tpl.trackingNote,
+    // If it's already shipped and a tracking number is on file, show it
+    // instead of promising it "soon" — that promise would just be stale.
+    order.trackingNumber ? shippedTpl.trackingLine(order.trackingNumber) : tpl.trackingNote,
     ``,
     tpl.signoff(b),
   ].join("\n");

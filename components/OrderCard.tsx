@@ -79,8 +79,10 @@ export default function OrderCard({ order }: { order: Order }) {
   };
 
   // Whichever tracking number is currently in the input — saved or not —
-  // is what the shipped message should quote, so the admin sees exactly
-  // what they're about to send rather than a stale saved value.
+  // is what both messages should quote, so the admin sees exactly what
+  // they're about to send rather than a stale saved value. Matters for the
+  // payment message too: if the order already shipped before this message
+  // went out, it should show the real tracking number, not "coming soon".
   const orderForMessage = { ...order, trackingNumber: trackingNumber.trim() || undefined };
 
   // Step 1 is always "payment received", step 2 is "shipped" — that's the
@@ -92,12 +94,12 @@ export default function OrderCard({ order }: { order: Order }) {
     order.shipped ? "shipped" : "payment"
   );
   const [message, setMessage] = useState(() =>
-    messageType === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(order)
+    messageType === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(orderForMessage)
   );
 
   const applyTemplate = (type: "payment" | "shipped") => {
     setMessageType(type);
-    setMessage(type === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(order));
+    setMessage(type === "shipped" ? shippedMessage(orderForMessage) : paymentReceivedMessage(orderForMessage));
   };
 
   // UPI QR payments arrive with no confirmation from the bank — the customer
