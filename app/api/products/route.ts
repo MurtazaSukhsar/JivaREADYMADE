@@ -3,6 +3,8 @@ import { addProduct, getAllProducts } from "@/lib/products";
 import { newProductSchema } from "@/lib/validation";
 import { isTrustedOrigin } from "@/lib/origin-check";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const products = await getAllProducts();
   return NextResponse.json({ products });

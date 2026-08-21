@@ -84,7 +84,10 @@ export async function readSheetRows(spreadsheetId: string, range: string): Promi
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}` +
     `?valueRenderOption=UNFORMATTED_VALUE`;
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Google Sheets read failed (${res.status}): ${text}`);

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAllProductsAdmin } from "@/lib/products";
 
+export const dynamic = "force-dynamic";
+
 // Admin-only: returns all products including hidden ones.
 // Middleware already ensures only authenticated requests reach this route.
 export async function GET() {
