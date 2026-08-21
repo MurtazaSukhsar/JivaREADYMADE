@@ -321,4 +321,17 @@ export async function setOrderTrackingNumber(
   return order;
 }
 
+export async function updateOrderCustomer(
+  orderId: string,
+  customer: Customer
+): Promise<Order | null> {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+
+  order.customer = customer;
+  order.updatedAt = new Date().toISOString();
+  await writeRow(order);
+  return order;
+}
+
 export const ORDERS_SHEET_COLUMN_COUNT = COLUMN_COUNT;

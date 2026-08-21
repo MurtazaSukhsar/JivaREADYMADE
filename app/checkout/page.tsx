@@ -51,7 +51,7 @@ type Customer = {
 
 const EMPTY_CUSTOMER: Customer = {
   name: "",
-  phone: "",
+  phone: "+91",
   email: "",
   address: "",
   city: "",
@@ -89,7 +89,20 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
 
   const set = (key: keyof Customer) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setCustomer((c) => ({ ...c, [key]: e.target.value }));
+    let val = e.target.value;
+    if (key === "phone") {
+      let cleaned = val.replace(/[^\d+-\s]/g, "");
+      if (cleaned === "" || cleaned === "+" || cleaned === "+9" || cleaned === "+91") {
+        val = "+91";
+      } else if (cleaned.startsWith("+91")) {
+        val = cleaned;
+      } else if (cleaned.startsWith("91")) {
+        val = "+" + cleaned;
+      } else {
+        val = "+91" + cleaned.replace(/^\+/, "");
+      }
+    }
+    setCustomer((c) => ({ ...c, [key]: val }));
     setFieldErrors((f) => ({ ...f, [key]: undefined }));
   };
 

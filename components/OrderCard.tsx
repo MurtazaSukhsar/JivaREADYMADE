@@ -28,6 +28,63 @@ export default function OrderCard({ order }: { order: Order }) {
   const [error, setError] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState(false);
 
+  // States for inline customer editing
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(order.customer.name);
+  const [editPhone, setEditPhone] = useState(order.customer.phone);
+  const [editEmail, setEditEmail] = useState(order.customer.email || "");
+  const [editAddress, setEditAddress] = useState(order.customer.address);
+  const [editCity, setEditCity] = useState(order.customer.city);
+  const [editState, setEditState] = useState(order.customer.state);
+  const [editPincode, setEditPincode] = useState(order.customer.pincode);
+  const [editLanguage, setEditLanguage] = useState(order.customer.language);
+
+  const startEditing = () => {
+    setEditName(order.customer.name);
+    setEditPhone(order.customer.phone);
+    setEditEmail(order.customer.email || "");
+    setEditAddress(order.customer.address);
+    setEditCity(order.customer.city);
+    setEditState(order.customer.state);
+    setEditPincode(order.customer.pincode);
+    setEditLanguage(order.customer.language);
+    setIsEditing(true);
+    setError(null);
+  };
+
+  const saveCustomerDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/customer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          phone: editPhone.trim(),
+          email: editEmail.trim(),
+          address: editAddress.trim(),
+          city: editCity.trim(),
+          state: editState.trim(),
+          pincode: editPincode.trim(),
+          language: editLanguage,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not save customer details.");
+        return;
+      }
+      setIsEditing(false);
+      router.refresh();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Cash-on-delivery vs paid-in-full — shown as a badge and also what
   // decides which WhatsApp breakdown (advance + due, or a straight total)
   // is actually correct for this order.
@@ -181,7 +238,7 @@ export default function OrderCard({ order }: { order: Order }) {
           <p className="font-mono text-xs text-ash">
             #{order.id.slice(0, 8)} · {formatDate(order.createdAt)}
           </p>
-          <p className="mt-1 font-display text-xl text-cream">{order.customer.name || "—"}</p>
+          <p className="mt-1 font-display text-xl text-cream">{isEditing ? editName : (order.customer.name || "—")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -212,21 +269,178 @@ export default function OrderCard({ order }: { order: Order }) {
       </div>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
-            Ship to
-          </p>
-          <div className="mt-2 space-y-0.5 font-body text-sm text-cream">
-            <p>{order.customer.address || "—"}</p>
-            <p className="text-ash">
-              {[order.customer.city, order.customer.state, order.customer.pincode].filter(Boolean).join(" — ") || "—"}
-            </p>
+        {isEditing ? (
+          <form onSubmit={saveCustomerDetails} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
+                Edit Details
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setIsEditing(false)}
+                className="font-mono text-[10px] uppercase tracking-widest2 text-ash hover:text-ember transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Full Name</span>
+                  <input
+                    required
+                    disabled={busy}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="input mt-1"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-2 grid-cols-2">
+                <div>
+                  <label className="block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Phone</span>
+                    <input
+                      required
+                      disabled={busy}
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="input mt-1"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Language</span>
+                    <select
+                      disabled={busy}
+                      value={editLanguage}
+                      onChange={(e) => setEditLanguage(e.target.value as any)}
+                      className="input mt-1 bg-slate border border-line rounded-sm py-2.5 px-3.5 text-cream font-body focus:border-ember/70 focus:outline-none"
+                    >
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.native} ({lang.short})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Email</span>
+                  <input
+                    disabled={busy}
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="input mt-1"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Address</span>
+                  <textarea
+                    required
+                    disabled={busy}
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    rows={2}
+                    className="input mt-1 resize-y"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-2 grid-cols-3">
+                <div>
+                  <label className="block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">City</span>
+                    <input
+                      required
+                      disabled={busy}
+                      value={editCity}
+                      onChange={(e) => setEditCity(e.target.value)}
+                      className="input mt-1 text-xs"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">State</span>
+                    <input
+                      required
+                      disabled={busy}
+                      value={editState}
+                      onChange={(e) => setEditState(e.target.value)}
+                      className="input mt-1 text-xs"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block">
+                    <span className="font-mono text-[10px] uppercase tracking-widest2 text-ash">Pincode</span>
+                    <input
+                      required
+                      disabled={busy}
+                      value={editPincode}
+                      onChange={(e) => setEditPincode(e.target.value)}
+                      className="input mt-1 text-xs"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="rounded-sm bg-ember px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-cream hover:brightness-110 disabled:opacity-50"
+                >
+                  {busy ? "Saving…" : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setIsEditing(false)}
+                  className="rounded-sm border border-line px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest2 text-ash hover:border-ash hover:text-cream disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
+                Ship to
+              </p>
+              <button
+                type="button"
+                onClick={startEditing}
+                className="font-mono text-[10px] uppercase tracking-widest2 text-ash hover:text-ember transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+            <div className="mt-2 space-y-0.5 font-body text-sm text-cream">
+              <p>{order.customer.address || "—"}</p>
+              <p className="text-ash">
+                {[order.customer.city, order.customer.state, order.customer.pincode].filter(Boolean).join(" — ") || "—"}
+              </p>
+            </div>
+            <div className="mt-3 space-y-0.5 font-mono text-xs text-ash">
+              <p>{order.customer.phone || "no phone"}</p>
+              <p className="break-all">{order.customer.email || "no email"}</p>
+            </div>
           </div>
-          <div className="mt-3 space-y-0.5 font-mono text-xs text-ash">
-            <p>{order.customer.phone || "no phone"}</p>
-            <p className="break-all">{order.customer.email || "no email"}</p>
-          </div>
-        </div>
+        )}
 
         <div>
           <p className="font-mono text-[11px] uppercase tracking-widest2 text-ash">
